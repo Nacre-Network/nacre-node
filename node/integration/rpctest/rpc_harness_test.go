@@ -75,7 +75,7 @@ func testSendOutputs(r *Harness, t *testing.T) {
 
 	// Next, generate a spend much greater than the block reward. This
 	// transaction should also have been mined properly.
-	txid = genSpend(btcutil.Amount(500 * btcutil.GrainPerMDL))
+	txid = genSpend(btcutil.Amount(50 * btcutil.GrainPerMDL)) // 5x the 10 NACR block reward
 	blockHashes, err = r.Client.Generate(1)
 	if err != nil {
 		t.Fatalf("unable to generate single block: %v", err)
@@ -482,7 +482,8 @@ func testMemWalletReorg(r *Harness, t *testing.T) {
 	// The harness was set up with 5 mature outputs.
 	var expectedBalance int64
 	for height := int32(1); height <= int32(5); height++ {
-		subsidy := blockchain.CalcBlockSubsidy(height, harness.ActiveNet)
+		subsidy := blockchain.CalcBlockSubsidy(height, harness.ActiveNet) -
+			blockchain.DevFundShare(height, harness.ActiveNet) // the dev fund output is not the wallet's
 		expectedBalance += subsidy
 	}
 	walletBalance := harness.ConfirmedBalance()
@@ -613,7 +614,8 @@ func TestHarness(t *testing.T) {
 	// Sum up the subsidies for the mature outputs (blocks 1 through numMatureOutputs)
 	var expectedBalance int64
 	for height := int32(1); height <= int32(numMatureOutputs); height++ {
-		subsidy := blockchain.CalcBlockSubsidy(height, mainHarness.ActiveNet)
+		subsidy := blockchain.CalcBlockSubsidy(height, mainHarness.ActiveNet) -
+			blockchain.DevFundShare(height, mainHarness.ActiveNet) // the dev fund output is not the wallet's
 		expectedBalance += subsidy
 	}
 

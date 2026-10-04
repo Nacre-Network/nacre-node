@@ -52,15 +52,20 @@ func createCoinbaseTx(coinbaseScript []byte, nextBlockHeight int32,
 		SignatureScript: coinbaseScript,
 		Sequence:        wire.MaxTxInSequenceNum,
 	})
+	devShare := blockchain.DevFundShare(nextBlockHeight, net)
 	if len(mineTo) == 0 {
 		tx.AddTxOut(&wire.TxOut{
-			Value:    blockchain.CalcBlockSubsidy(nextBlockHeight, net),
+			Value:    blockchain.CalcBlockSubsidy(nextBlockHeight, net) - devShare,
 			PkScript: pkScript,
 		})
 	} else {
 		for i := range mineTo {
 			tx.AddTxOut(&mineTo[i])
 		}
+	}
+	// Every coinbase must pay the dev fund share (NACRE consensus).
+	if devShare > 0 {
+		tx.AddTxOut(&wire.TxOut{Value: devShare, PkScript: net.DevFundScript})
 	}
 	return btcutil.NewTx(tx), nil
 }

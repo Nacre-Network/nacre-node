@@ -269,7 +269,7 @@ func TestInputYield(t *testing.T) {
 	t.Parallel()
 
 	// Use a Taproot address for Taproot-only wallet (modelOS mdl1 mainnet HRP).
-	addr, err := btcutil.DecodeAddress("mdl1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rus02trzg", &chaincfg.MainNetParams)
+	addr, err := btcutil.DecodeAddress("nacr1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rus4ztf2y", &chaincfg.MainNetParams)
 	require.NoError(t, err)
 	pkScript, err := txscript.PayToAddrScript(addr)
 	require.NoError(t, err)
