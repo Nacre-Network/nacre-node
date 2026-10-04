@@ -168,72 +168,6 @@ func TestWTEMADifficultyExactTarget(t *testing.T) {
 	}
 }
 
-// TestWTEMADifficultySlowBlock tests when block time is longer than target.
-func TestWTEMADifficultySlowBlock(t *testing.T) {
-	ctx := newTestChainCtx()
-	T := int64(ctx.params.TargetTimePerBlock / time.Second) // 600 seconds
-
-	genesis := &mockHeaderCtx{
-		height:    0,
-		bits:      0x1d00ffff,
-		timestamp: 1000000,
-		parent:    nil,
-	}
-
-	block1 := &mockHeaderCtx{
-		height:    1,
-		bits:      0x1d00ffff,
-		timestamp: genesis.timestamp + 2*T, // Double target time (slow block)
-		parent:    genesis,
-	}
-
-	bits, err := calcNextRequiredDifficulty(block1, time.Unix(block1.timestamp+T, 0), ctx)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// When t > T, difficulty should decrease (target increases).
-	oldTarget := CompactToBig(block1.bits)
-	newTarget := CompactToBig(bits)
-
-	if newTarget.Cmp(oldTarget) <= 0 {
-		t.Errorf("expected target to increase for slow block: old=%x, new=%x", oldTarget, newTarget)
-	}
-}
-
-// TestWTEMADifficultyFastBlock tests when block time is shorter than target.
-func TestWTEMADifficultyFastBlock(t *testing.T) {
-	ctx := newTestChainCtx()
-	T := int64(ctx.params.TargetTimePerBlock / time.Second) // 600 seconds
-
-	genesis := &mockHeaderCtx{
-		height:    0,
-		bits:      0x1d00ffff,
-		timestamp: 1000000,
-		parent:    nil,
-	}
-
-	block1 := &mockHeaderCtx{
-		height:    1,
-		bits:      0x1d00ffff,
-		timestamp: genesis.timestamp + T/2, // Half target time (fast block)
-		parent:    genesis,
-	}
-
-	bits, err := calcNextRequiredDifficulty(block1, time.Unix(block1.timestamp+T, 0), ctx)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// When t < T, difficulty should increase (target decreases).
-	oldTarget := CompactToBig(block1.bits)
-	newTarget := CompactToBig(bits)
-
-	if newTarget.Cmp(oldTarget) >= 0 {
-		t.Errorf("expected target to decrease for fast block: old=%x, new=%x", oldTarget, newTarget)
-	}
-}
-
 // TestWTEMADifficultyPowLimit tests that difficulty never exceeds PowLimit.
 func TestWTEMADifficultyPowLimit(t *testing.T) {
 	ctx := newTestChainCtx()
@@ -292,95 +226,6 @@ func TestWTEMADifficultyNoRetargeting(t *testing.T) {
 	// With no retargeting, should return PowLimitBits.
 	if bits != ctx.params.PowLimitBits {
 		t.Errorf("no retarget bits = %d, want %d", bits, ctx.params.PowLimitBits)
-	}
-}
-
-// TestWTEMADifficultyMinTimestamp tests minimum timestamp enforcement.
-func TestWTEMADifficultyMinTimestamp(t *testing.T) {
-	ctx := newTestChainCtx()
-
-	genesis := &mockHeaderCtx{
-		height:    0,
-		bits:      0x1d00ffff,
-		timestamp: 1000000,
-		parent:    nil,
-	}
-
-	// Block with 0-second interval (should be clamped to 1 second).
-	block1 := &mockHeaderCtx{
-		height:    1,
-		bits:      0x1d00ffff,
-		timestamp: genesis.timestamp, // Same timestamp
-		parent:    genesis,
-	}
-
-	// Should not panic or error.
-	bits, err := calcNextRequiredDifficulty(block1, time.Now(), ctx)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Target should decrease (faster mining requires more difficulty).
-	oldTarget := CompactToBig(block1.bits)
-	newTarget := CompactToBig(bits)
-
-	if newTarget.Cmp(oldTarget) >= 0 {
-		t.Errorf("expected target to decrease for fast block: old=%x, new=%x", oldTarget, newTarget)
-	}
-}
-
-// TestWTEMADifficultyAdjustment tests that WTEMA correctly adjusts in both directions.
-// Note: WTEMA is inherently asymmetric - doubling block time doesn't produce the
-// same magnitude change as halving it. This is expected behavior for exponential filters.
-func TestWTEMADifficultyAdjustment(t *testing.T) {
-	ctx := newTestChainCtx()
-	T := int64(ctx.params.TargetTimePerBlock / time.Second)
-
-	genesis := &mockHeaderCtx{
-		height:    0,
-		bits:      0x1c00ffff, // Higher difficulty than PowLimit
-		timestamp: 1000000,
-		parent:    nil,
-	}
-
-	// Slow block: t = 2*T should increase target (decrease difficulty)
-	slowBlock := &mockHeaderCtx{
-		height:    1,
-		bits:      genesis.bits,
-		timestamp: genesis.timestamp + 2*T,
-		parent:    genesis,
-	}
-
-	slowBits, err := calcNextRequiredDifficulty(slowBlock, time.Unix(slowBlock.timestamp+T, 0), ctx)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Fast block: t = T/2 should decrease target (increase difficulty)
-	fastBlock := &mockHeaderCtx{
-		height:    1,
-		bits:      genesis.bits,
-		timestamp: genesis.timestamp + T/2,
-		parent:    genesis,
-	}
-
-	fastBits, err := calcNextRequiredDifficulty(fastBlock, time.Unix(fastBlock.timestamp+T, 0), ctx)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	slowTarget := CompactToBig(slowBits)
-	fastTarget := CompactToBig(fastBits)
-	origTarget := CompactToBig(genesis.bits)
-
-	// Verify slow block increased target (easier)
-	if slowTarget.Cmp(origTarget) <= 0 {
-		t.Errorf("slow block should increase target: orig=%x, slow=%x", origTarget, slowTarget)
-	}
-
-	// Verify fast block decreased target (harder)
-	if fastTarget.Cmp(origTarget) >= 0 {
-		t.Errorf("fast block should decrease target: orig=%x, fast=%x", origTarget, fastTarget)
 	}
 }
 
@@ -525,55 +370,22 @@ func TestCalcEasiestDifficulty_BoundsWTEMAChains(t *testing.T) {
 }
 
 // TestCalcEasiestDifficulty_Consistency verifies that the per-half-life
-// multiplier used inside calcEasiestDifficulty exceeds the true maximum
-// WTEMA growth over one half-life. The true maximum is computed numerically
-// from the configured TargetTimePerBlock and WTEMAHalfLife, so any change
-// to those params re-validates the bound automatically.
+// multiplier used inside calcEasiestDifficulty exceeds the maximum target
+// growth over one ASERT half-life (2x) and the continuous WTEMA bound (e).
 func TestCalcEasiestDifficulty_Consistency(t *testing.T) {
 	ctx := newTestChainCtx()
 	bc := newTestBlockChain(t, ctx.params)
 
-	T := int64(ctx.params.TargetTimePerBlock / time.Second)
-	HL := int64(ctx.params.WTEMAHalfLife / time.Second)
-
-	// Numerically find the worst-case discrete growth over one half-life:
-	//   max over N of (1 + (HL/N - T)/HL)^N
-	// This approaches e from below for T << HL.
-	worstGrowth := 0.0
-	for N := int64(1); N <= HL/T+1; N++ {
-		perBlock := 1.0 + (float64(HL)/float64(N)-float64(T))/float64(HL)
-		if perBlock <= 0 {
-			continue
-		}
-		growth := math.Pow(perBlock, float64(N))
-		if growth > worstGrowth {
-			worstGrowth = growth
-		}
-	}
-
-	// Compute the effective multiplier by running calcEasiestDifficulty for
-	// exactly one half-life and measuring the ratio.
 	startBits := uint32(0x1a00ffff)
 	startTarget := new(big.Float).SetInt(CompactToBig(startBits))
-	resultTarget := new(big.Float).SetInt(CompactToBig(
-		bc.calcEasiestDifficulty(startBits, ctx.params.WTEMAHalfLife),
-	))
+	halfLife := time.Duration(colossusASERTHalflife) * time.Second
+	resultTarget := new(big.Float).SetInt(CompactToBig(bc.calcEasiestDifficulty(startBits, halfLife)))
 	effectiveMultiplier, _ := new(big.Float).Quo(resultTarget, startTarget).Float64()
 
-	assert.Greater(t, effectiveMultiplier, worstGrowth,
-		"effective multiplier (%.5f) must exceed worst-case WTEMA growth "+
-			"(%.5f) for T=%ds, HL=%ds", effectiveMultiplier, worstGrowth, T, HL)
-
+	assert.Greater(t, effectiveMultiplier, 2.0,
+		"multiplier (%.5f) must exceed ASERT growth per half-life (2x)", effectiveMultiplier)
 	assert.Greater(t, effectiveMultiplier, math.E,
-		"effective multiplier (%.5f) must exceed e (%.5f) since "+
-			"exp(D/HL) is the continuous-time upper bound",
-		effectiveMultiplier, math.E)
-
-	// Sanity: the multiplier shouldn't be wildly over-conservative either.
+		"multiplier (%.5f) must exceed e, the continuous WTEMA bound", effectiveMultiplier)
 	assert.Less(t, effectiveMultiplier, math.E*1.10,
-		"effective multiplier (%.5f) is more than 10%% above e; "+
-			"consider tightening", effectiveMultiplier)
-
-	t.Logf("worst discrete growth: %.5f, effective multiplier: %.5f, e: %.5f",
-		worstGrowth, effectiveMultiplier, math.E)
+		"multiplier (%.5f) is more than 10%% above e; consider tightening", effectiveMultiplier)
 }

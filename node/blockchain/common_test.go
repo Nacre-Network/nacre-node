@@ -307,7 +307,8 @@ func newBlock(chain *BlockChain, prev *btcutil.Block,
 	txns := make([]*wire.MsgTx, 0, 1+len(spends))
 
 	// Create and add coinbase tx.
-	cb := testhelper.CreateCoinbaseTx(blockHeight, CalcBlockSubsidy(blockHeight, chain.chainParams))
+	cb := testhelper.CreateCoinbaseTx(blockHeight, CalcBlockSubsidy(blockHeight, chain.chainParams),
+		DevFundShare(blockHeight, chain.chainParams), chain.chainParams.DevFundScript)
 	txns = append(txns, cb)
 
 	// Spend all txs to be spent.

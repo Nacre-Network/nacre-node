@@ -267,10 +267,15 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 		SignatureScript: coinbaseScript,
 		Sequence:        wire.MaxTxInSequenceNum,
 	})
+	// The miner output stays first: transaction fees are added to it later.
+	devShare := blockchain.DevFundShare(nextBlockHeight, params)
 	tx.AddTxOut(&wire.TxOut{
-		Value:    blockchain.CalcBlockSubsidy(nextBlockHeight, params),
+		Value:    blockchain.CalcBlockSubsidy(nextBlockHeight, params) - devShare,
 		PkScript: pkScript,
 	})
+	if devShare > 0 {
+		tx.AddTxOut(&wire.TxOut{Value: devShare, PkScript: params.DevFundScript})
+	}
 	return btcutil.NewTx(tx), nil
 }
 

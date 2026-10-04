@@ -15,24 +15,24 @@ import (
 // height name is kept because AuxPoW + the DAA activate together at this block.
 const (
 	// colossusTargetBlockTime is the desired seconds per block.
-	colossusTargetBlockTime = int64(194)
+	colossusTargetBlockTime = int64(120)
 
-	// colossusASERTHalflife is the ASERT half-life in seconds (~5.2h: 96×194). A
+	// colossusASERTHalflife is the ASERT half-life in seconds (3.2h: 96×120). A
 	// sustained hashrate error is halved roughly every half-life.
-	colossusASERTHalflife = int64(96 * 194)
+	colossusASERTHalflife = int64(96 * 120)
 
 	// colossusAuxPowActivationBlock is the height at which the ASERT DAA (Colossus
 	// 2.0) takes over from Phase-1 WTEMA. The block AT this height is the anchor;
 	// ASERT governs every block AFTER it (dispatch: ASERT when lastNode.Height() >=
 	// this value, so block (this+1) is the first ASERT block).
 	//
-	// Activation 15860: Phase-1 WTEMA governs blocks 0–15860, then ASERT from 15861.
-	// HARD FORK: every node must run this exact value before the chain reaches it.
-	colossusAuxPowActivationBlock = int32(15860)
+	// NACRE: anchored at block 1, ASERT governs every block from block 2. Block 1
+	// keeps the genesis target.
+	colossusAuxPowActivationBlock = int32(1)
 
 	// colossusReanchorBlock re-anchors the ASERT schedule at a later height to discard
 	// bootstrap time-debt. 0 = disabled (no re-anchor).
-	colossusReanchorBlock = int32(17500)
+	colossusReanchorBlock = int32(0)
 )
 
 // applyTargetFloor clamps a target to [1, powLimit] — i.e. difficulty into
@@ -94,8 +94,13 @@ func calcNextAsertTarget(lastNode chaincfg.HeaderCtx, powLimit *big.Int) *big.In
 	// block counts as the first scheduled block. Fall back to the anchor's own
 	// time if it is the genesis block.
 	anchorTime := anchor.Timestamp()
-	if ap := anchor.Parent(); ap != nil {
+	if ap := anchor.Parent(); ap != nil && ap.Height() > 0 {
 		anchorTime = ap.Timestamp()
+	} else {
+		// NACRE: the genesis timestamp is fixed long before launch. Schedule
+		// from the anchor itself, one target spacing earlier, so the gap
+		// between genesis and launch is not counted as time debt.
+		anchorTime -= colossusTargetBlockTime
 	}
 
 	return calcASERT(

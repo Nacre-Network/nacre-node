@@ -154,6 +154,10 @@ func calcNextRequiredDifficulty(lastNode chaincfg.HeaderCtx, newBlockTime time.T
 // known good checkpoint, before the block is fully validated or cached as an
 // orphan.
 //
+// NACRE: ASERT governs every block after block 1 and grows the target by at
+// most 2^(D / colossusASERTHalflife); WTEMA (block 1 only) by exp(D / halfLife).
+// Both stay under (87/32)^periods counted in ASERT half-lives, used below.
+//
 // For WTEMA, the maximum target growth over duration D is bounded by
 // exp(D / halfLife). Each block multiplies the target by (1 + (t-T)/HL), and
 // the attacker-optimal distribution of block times converges to exp(D/HL) in
@@ -179,7 +183,7 @@ func (b *BlockChain) calcEasiestDifficulty(bits uint32, duration time.Duration) 
 		}
 	}
 
-	halfLifeSec := int64(b.chainParams.WTEMAHalfLife / time.Second)
+	halfLifeSec := colossusASERTHalflife
 	newTarget := CompactToBig(bits)
 
 	if durationVal > 0 {

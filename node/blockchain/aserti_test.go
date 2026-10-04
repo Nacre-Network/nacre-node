@@ -120,3 +120,29 @@ func TestAsertStability(t *testing.T) {
 	t.Logf("10x step: peak=%.0f (%.0f%% of target), settled=%.0f — smooth, no overshoot",
 		peak, peak/target*100, last)
 }
+
+// TestAsertAnchoredAtBlockOne checks the NACRE schedule: ASERT from block 2,
+// anchored at block 1, and the gap between a genesis timestamp set long
+// before launch and block 1 does not count as time debt.
+func TestAsertAnchoredAtBlockOne(t *testing.T) {
+	pow := asertPowLimit()
+	T := colossusTargetBlockTime
+	bits := BigToCompact(new(big.Int).Div(pow, big.NewInt(1000)))
+
+	genesis := &mockHeaderCtx{height: 0, bits: bits, timestamp: 0}
+	block1 := &mockHeaderCtx{height: 1, bits: bits, timestamp: 90 * 24 * 3600, parent: genesis}
+
+	if got := calcNextAsertTarget(block1, pow); got.Cmp(CompactToBig(bits)) != 0 {
+		t.Fatalf("block 2 target %x, want the block 1 target %x: genesis gap counted as time debt",
+			got, CompactToBig(bits))
+	}
+
+	fast := &mockHeaderCtx{height: 2, bits: bits, timestamp: block1.timestamp + T/4, parent: block1}
+	if calcNextAsertTarget(fast, pow).Cmp(CompactToBig(bits)) >= 0 {
+		t.Error("a fast block 2 should make block 3 harder")
+	}
+	slow := &mockHeaderCtx{height: 2, bits: bits, timestamp: block1.timestamp + 4*T, parent: block1}
+	if calcNextAsertTarget(slow, pow).Cmp(CompactToBig(bits)) <= 0 {
+		t.Error("a slow block 2 should make block 3 easier")
+	}
+}

@@ -233,7 +233,8 @@ func pushDataScript(items ...[]byte) []byte {
 // conforms to the requirements of version 2 blocks.
 func (g *testGenerator) createCoinbaseTx(blockHeight int32) *wire.MsgTx {
 	return testhelper.CreateCoinbaseTx(
-		blockHeight, blockchain.CalcBlockSubsidy(blockHeight, g.params))
+		blockHeight, blockchain.CalcBlockSubsidy(blockHeight, g.params),
+		blockchain.DevFundShare(blockHeight, g.params), g.params.DevFundScript)
 }
 
 // calcMerkleRoot creates a merkle tree from the slice of transactions and

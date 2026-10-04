@@ -19,6 +19,12 @@ import (
 
 // These variables are the chain proof-of-work limit parameters for each default
 // network.
+// testDevFundScript is the dev fund output on test networks: an unspendable
+// P2TR program (0x20..0x3f) nobody holds a key for.
+var testDevFundScript = append([]byte{0x51, 0x20},
+	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f)
+
 var (
 	// bigOne is 1 represented as a big.Int.  It is defined here to avoid
 	// the overhead of creating it multiple times.
@@ -262,6 +268,14 @@ type Params struct {
 	// Mempool parameters
 	RelayNonStdTxs bool
 
+	// DevFundScript is the output script that every coinbase below
+	// DevFundEndHeight must pay the dev fund share to. Empty disables it.
+	DevFundScript []byte
+
+	// DevFundEndHeight is the first block height that no longer pays the
+	// dev fund (the first halving).
+	DevFundEndHeight int32
+
 	// Human-readable part for Bech32 encoded segwit addresses, as defined
 	// in BIP 173.
 	Bech32HRPSegwit string
@@ -293,9 +307,9 @@ var MainNetParams = Params{
 	// Production value: a freshly mined coinbase is spendable only after 100 confirmations.
 	// This is a consensus rule: every node on the network MUST run this exact value or fork.
 	CoinbaseMaturity:     100,
-	TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:        time.Hour * 168,                        // 1 week
-	ReduceMinDifficulty:  false,                                  // not supported on mainnet, will panic if set to true on difficulty calculation.
+	TargetTimePerBlock:   time.Second * 120,
+	WTEMAHalfLife:        time.Hour * 168, // 1 week
+	ReduceMinDifficulty:  false,           // not supported on mainnet, will panic if set to true on difficulty calculation.
 	MinDiffReductionTime: 0,
 	GenerateSupported:    false,
 	// inference_tx (v3) and inference_proof_tx (v4) are modelOS mainnet-only.
@@ -365,6 +379,10 @@ var MainNetParams = Params{
 	// BIP 173.
 	Bech32HRPSegwit: "nacr", // NACRE main net: nacr1p... Taproot addresses
 
+	// Set to the dev multisig P2TR script before genesis; empty pays no dev fund.
+	DevFundScript:    nil,
+	DevFundEndHeight: 1_050_000,
+
 	// Address encoding magics
 	PrivateKeyID: 0x80, // starts with 5 (uncompressed) or K (compressed)
 
@@ -395,10 +413,10 @@ var RegressionNetParams = Params{
 	PowLimitBits:          0x1e010000,
 	PoWNoRetargeting:      true,
 	CoinbaseMaturity:      100,
-	TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:         time.Hour * 168,                        // 1 week
+	TargetTimePerBlock:    time.Second * 120,
+	WTEMAHalfLife:         time.Hour * 168, // 1 week
 	ReduceMinDifficulty:   true,
-	MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
+	MinDiffReductionTime:  time.Second * 240, // TargetTimePerBlock * 2
 	GenerateSupported:     true,
 	MaxSupportedTxVersion: 5,   // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  120, // 2 hours for regtest
@@ -479,8 +497,8 @@ var TestNetParams = Params{
 	PowLimit:              testPowLimit,
 	PowLimitBits:          0x1b00ffff,
 	CoinbaseMaturity:      100,
-	TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:         time.Hour * 168,                        // 1 week
+	TargetTimePerBlock:    time.Second * 120,
+	WTEMAHalfLife:         time.Hour * 168, // 1 week
 	ReduceMinDifficulty:   true,
 	MinDiffReductionTime:  time.Hour * 4, // 4 hours
 	GenerateSupported:     false,
@@ -535,6 +553,9 @@ var TestNetParams = Params{
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
 	Bech32HRPSegwit: "tnacr", // NACRE test net
+
+	DevFundScript:    testDevFundScript,
+	DevFundEndHeight: 1_050_000,
 
 	// Address encoding magics
 	PrivateKeyID: 0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -563,8 +584,8 @@ var TestNet2Params = Params{
 	PowLimit:              testPowLimit,
 	PowLimitBits:          0x1b00ffff,
 	CoinbaseMaturity:      100,
-	TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:         time.Hour * 168,                        // 1 week
+	TargetTimePerBlock:    time.Second * 120,
+	WTEMAHalfLife:         time.Hour * 168, // 1 week
 	ReduceMinDifficulty:   true,
 	MinDiffReductionTime:  time.Hour * 4, // 4 hours
 	GenerateSupported:     false,
@@ -619,6 +640,9 @@ var TestNet2Params = Params{
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
 	Bech32HRPSegwit: "tnacr", // NACRE test net
+
+	DevFundScript:    testDevFundScript,
+	DevFundEndHeight: 1_050_000,
 
 	// Address encoding magics
 	PrivateKeyID: 0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -654,10 +678,10 @@ var SimNetParams = Params{
 	PowLimitBits:          0x1e010000,
 	PoWNoRetargeting:      true,
 	CoinbaseMaturity:      100,
-	TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:         time.Hour * 168,                        // 1 week
+	TargetTimePerBlock:    time.Second * 120,
+	WTEMAHalfLife:         time.Hour * 168, // 1 week
 	ReduceMinDifficulty:   true,
-	MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
+	MinDiffReductionTime:  time.Second * 240, // TargetTimePerBlock * 2
 	GenerateSupported:     true,
 	MaxSupportedTxVersion: 5,   // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  120, // 2 hours for simnet
@@ -711,6 +735,9 @@ var SimNetParams = Params{
 	// BIP 173.
 	Bech32HRPSegwit: "snacr", // NACRE sim net
 
+	DevFundScript:    testDevFundScript,
+	DevFundEndHeight: 1_050_000,
+
 	// Address encoding magics
 	PrivateKeyID: 0x64, // starts with 4 (uncompressed) or F (compressed)
 
@@ -757,10 +784,10 @@ func CustomSignetParams(challenge []byte, dnsSeeds []DNSSeed) Params {
 		PowLimit:              sigNetPowLimit,
 		PowLimitBits:          0x1d0fffff,
 		CoinbaseMaturity:      100,
-		TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-		WTEMAHalfLife:         time.Hour * 168,                        // 1 week
+		TargetTimePerBlock:    time.Second * 120,
+		WTEMAHalfLife:         time.Hour * 168, // 1 week
 		ReduceMinDifficulty:   false,
-		MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
+		MinDiffReductionTime:  time.Second * 240, // TargetTimePerBlock * 2
 		GenerateSupported:     false,
 		MaxSupportedTxVersion: 2, // signet = Pearl's test network; inference_tx is not valid on Pearl
 		MaxTimeOffsetMinutes:  5,

@@ -74,7 +74,7 @@ func CreateSpendTx(spend *SpendableOut, fee btcutil.Amount) *wire.MsgTx {
 // CreateCoinbaseTx returns a coinbase transaction paying an appropriate
 // subsidy based on the passed block height and the block subsidy.  The
 // coinbase signature script conforms to the requirements of version 2 blocks.
-func CreateCoinbaseTx(blockHeight int32, blockSubsidy int64) *wire.MsgTx {
+func CreateCoinbaseTx(blockHeight int32, blockSubsidy, devShare int64, devScript []byte) *wire.MsgTx {
 	extraNonce := uint64(0)
 	coinbaseScript, err := StandardCoinbaseScript(blockHeight, extraNonce)
 	if err != nil {
@@ -91,9 +91,12 @@ func CreateCoinbaseTx(blockHeight int32, blockSubsidy int64) *wire.MsgTx {
 		SignatureScript: coinbaseScript,
 	})
 	tx.AddTxOut(&wire.TxOut{
-		Value:    blockSubsidy,
+		Value:    blockSubsidy - devShare,
 		PkScript: TestP2TRScript,
 	})
+	if devShare > 0 {
+		tx.AddTxOut(&wire.TxOut{Value: devShare, PkScript: devScript})
+	}
 	return tx
 }
 

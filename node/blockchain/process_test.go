@@ -77,6 +77,7 @@ func TestProcessBlock_CheckpointDifficulty(t *testing.T) {
 	block4Time := block4.MsgBlock().BlockHeader().Timestamp
 	coinbaseTx := testhelper.CreateCoinbaseTx(
 		6, CalcBlockSubsidy(6, chain.chainParams),
+		DevFundShare(6, chain.chainParams), chain.chainParams.DevFundScript,
 	)
 	merkleRoot := calcMerkleRoot([]*wire.MsgTx{coinbaseTx})
 

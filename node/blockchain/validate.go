@@ -40,21 +40,16 @@ const (
 	// coinbases to start with the serialized block height.
 	serializedHeightVersion = 2
 
-	// totalSupply is the maximum supply of MDL tokens: 21,000,000 MDL.
-	// Scaled 1/100 from Pearl's 2.1B PRL — same block-reward curve, 100× smaller supply.
-	// Genesis block reward ≈ 32.3 MDL, decaying polynomially toward zero.
-	totalSupply = 21_000_000 * btcutil.GrainPerMDL
+	// baseSubsidy is the NACRE block reward before any halving: 10 NACR.
+	baseSubsidy = 10 * btcutil.GrainPerMDL
 
-	// defaultEmissionConstant is the default emission constant used when chainParams is nil.
-	// This represents 4 years of blocks at 3 minutes and 14 seconds per block:
-	// (1440 minutes/day) / (3 minutes and 14 seconds/block) * 365 days * 4 years = 650,226 blocks
-	defaultEmissionConstant = int64(650226)
+	// subsidyHalvingInterval is the number of blocks between halvings. With
+	// 10 NACR per block this caps the supply at 21,000,000 NACR.
+	subsidyHalvingInterval = 1_050_000
 
-	// Inference blocks: first inferenceBlocks blocks pay a flat reward, then the standard curve
-	// resumes offset so total supply stays 21,000,000.
-	inferenceBlocks       = int32(240)
-	inferenceRewardGrains = int64(2_500) * btcutil.GrainPerMDL
-	inferencePhase2Offset = int64(18_884)
+	// devFundPercent is the share of the block subsidy paid to the dev fund
+	// until chaincfg.Params.DevFundEndHeight. There is no premine.
+	devFundPercent = 3
 
 	// coinbaseHeightAllocSize is the amount of bytes that the
 	// ScriptBuilder will allocate when validating the coinbase height.
@@ -165,41 +160,26 @@ func IsFinalizedTransaction(tx *btcutil.Tx, blockHeight int32, blockTime time.Ti
 	return true
 }
 
-func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
-	// Genesis block has no subsidy
-	if height == 0 {
+// CalcBlockSubsidy returns the block subsidy at the given height: 10 NACR,
+// halved every subsidyHalvingInterval blocks. The genesis block pays nothing.
+func CalcBlockSubsidy(height int32, _ *chaincfg.Params) int64 {
+	if height <= 0 {
 		return 0
 	}
-
-	// Inference blocks: flat reward for the first inferenceBlocks blocks.
-	if height <= inferenceBlocks {
-		return inferenceRewardGrains
+	halvings := height / subsidyHalvingInterval
+	if halvings >= 64 {
+		return 0
 	}
+	return baseSubsidy >> uint(halvings)
+}
 
-	var emissionConstant int64
-	if chainParams != nil && chainParams.TargetTimePerBlock > 0 {
-		targetTimePerBlockSeconds := int64(chainParams.TargetTimePerBlock / time.Second)
-		emissionConstant = (4 * 365 * 24 * 60 * 60) / targetTimePerBlockSeconds
-	} else {
-		// Fallback to default constant if chainParams is nil (used in tests)
-		emissionConstant = defaultEmissionConstant
+// DevFundShare returns the part of the block subsidy that the coinbase at the
+// given height must pay to chainParams.DevFundScript (zero when disabled).
+func DevFundShare(height int32, chainParams *chaincfg.Params) int64 {
+	if len(chainParams.DevFundScript) == 0 || height <= 0 || height >= chainParams.DevFundEndHeight {
+		return 0
 	}
-
-	h := int64(height) + inferencePhase2Offset
-
-	numerator := new(big.Int).Mul(
-		big.NewInt(totalSupply),
-		big.NewInt(emissionConstant),
-	)
-
-	denominator := new(big.Int).Mul(
-		big.NewInt(h+emissionConstant),
-		big.NewInt(h-1+emissionConstant),
-	)
-
-	subsidy := new(big.Int).Div(numerator, denominator)
-
-	return subsidy.Int64()
+	return CalcBlockSubsidy(height, chainParams) * devFundPercent / 100
 }
 
 // CheckTransactionSanity performs some preliminary checks on a transaction to
@@ -1254,6 +1234,21 @@ func (b *BlockChain) checkConnectBlock(node *blockNode, block *btcutil.Block, vi
 			"which is more than expected value of %v",
 			totalGrainOut, expectedGrainOut)
 		return ruleError(ErrBadCoinbaseValue, str)
+	}
+
+	// The coinbase must pay the dev fund share to the dev fund script.
+	if share := DevFundShare(node.height, b.chainParams); share > 0 {
+		var paid int64
+		for _, txOut := range transactions[0].MsgTx().TxOut {
+			if bytes.Equal(txOut.PkScript, b.chainParams.DevFundScript) {
+				paid += txOut.Value
+			}
+		}
+		if paid < share {
+			str := fmt.Sprintf("coinbase transaction for block pays %v "+
+				"to the dev fund, expected at least %v", paid, share)
+			return ruleError(ErrBadCoinbaseValue, str)
+		}
 	}
 
 	// Don't run scripts if this node is before the latest known good
