@@ -19,6 +19,12 @@ import (
 
 // These variables are the chain proof-of-work limit parameters for each default
 // network.
+// mainDevFundScript pays the mainnet dev fund:
+// nacr1pzn5xu9p68yx9qj2ug5yegcvu55z0c850qzmqjpjqymsgczege06qfa6vuf
+var mainDevFundScript = append([]byte{0x51, 0x20},
+	0x14, 0xe8, 0x6e, 0x14, 0x3a, 0x39, 0x0c, 0x50, 0x49, 0x5c, 0x45, 0x09, 0x94, 0x61, 0x9c, 0xa5,
+	0x04, 0xfc, 0x1e, 0x8f, 0x00, 0xb6, 0x09, 0x06, 0x40, 0x26, 0xe0, 0x8c, 0x0b, 0x28, 0xcb, 0xf4)
+
 // testDevFundScript is the dev fund output on test networks: an unspendable
 // P2TR program (0x20..0x3f) nobody holds a key for.
 var testDevFundScript = append([]byte{0x51, 0x20},
@@ -379,8 +385,7 @@ var MainNetParams = Params{
 	// BIP 173.
 	Bech32HRPSegwit: "nacr", // NACRE main net: nacr1p... Taproot addresses
 
-	// Set to the dev multisig P2TR script before genesis; empty pays no dev fund.
-	DevFundScript:    nil,
+	DevFundScript:    mainDevFundScript,
 	DevFundEndHeight: 1_050_000,
 
 	// Address encoding magics
