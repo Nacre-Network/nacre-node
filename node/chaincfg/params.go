@@ -42,7 +42,7 @@ var (
 
 	// testPowLimit is the highest proof of work value a block can
 	// have for the test network.  It is the value 2^208 - 1.
-	testPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 208), bigOne)
+	testPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
 
 	// regressionPowLimit is the highest proof of work value a Pearl block
 	// can have for the regression test network.
@@ -500,7 +500,7 @@ var TestNetParams = Params{
 	GenesisBlock:          &testNetGenesisBlock,
 	GenesisHash:           &testNetGenesisHash,
 	PowLimit:              testPowLimit,
-	PowLimitBits:          0x1b00ffff,
+	PowLimitBits:          0x1d00ffff,
 	CoinbaseMaturity:      100,
 	TargetTimePerBlock:    time.Second * 120,
 	WTEMAHalfLife:         time.Hour * 168, // 1 week
