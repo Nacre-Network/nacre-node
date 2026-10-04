@@ -127,8 +127,8 @@ func TestElementWire(t *testing.T) {
 		},
 		{
 			MainNet,
-			// MainNet magic 0x4D444C4D ("MDLM") in little-endian wire order.
-			[]byte{0x4d, 0x4c, 0x44, 0x4d},
+			// MainNet magic 0x4E41434D ("NACM") in little-endian wire order.
+			[]byte{0x4d, 0x43, 0x41, 0x4e},
 		},
 		// Type not supported by the "fast" path and requires reflection.
 		{

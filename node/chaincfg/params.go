@@ -282,17 +282,14 @@ type Params struct {
 var MainNetParams = Params{
 	Name:        "mainnet",
 	Net:         wire.MainNet,
-	DefaultPort: "44208",
-	DNSSeeds: []DNSSeed{
-		{"seeder1.modeloslab.xyz", false},
-		{"seeder2.modeloslab.xyz", false},
-	},
+	DefaultPort: "47208",
+	DNSSeeds:    []DNSSeed{},
 
 	// Chain parameters
-	GenesisBlock:         &genesisBlock,
-	GenesisHash:          &genesisHash,
-	PowLimit:             mainPowLimit,
-	PowLimitBits:         0x1b00ffff,
+	GenesisBlock: &genesisBlock,
+	GenesisHash:  &genesisHash,
+	PowLimit:     mainPowLimit,
+	PowLimitBits: 0x1b00ffff,
 	// Production value: a freshly mined coinbase is spendable only after 100 confirmations.
 	// This is a consensus rule: every node on the network MUST run this exact value or fork.
 	CoinbaseMaturity:     100,
@@ -366,7 +363,7 @@ var MainNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "mdl", // always mdl for main net — produces mdl1p... Taproot addresses
+	Bech32HRPSegwit: "nacr", // NACRE main net: nacr1p... Taproot addresses
 
 	// Address encoding magics
 	PrivateKeyID: 0x80, // starts with 5 (uncompressed) or K (compressed)
@@ -392,18 +389,18 @@ var RegressionNetParams = Params{
 	DNSSeeds:    []DNSSeed{},
 
 	// Chain parameters
-	GenesisBlock:         &regTestGenesisBlock,
-	GenesisHash:          &regTestGenesisHash,
-	PowLimit:             regressionPowLimit,
-	PowLimitBits:         0x1e010000,
-	PoWNoRetargeting:     true,
-	CoinbaseMaturity:     100,
-	TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:        time.Hour * 168,                        // 1 week
+	GenesisBlock:          &regTestGenesisBlock,
+	GenesisHash:           &regTestGenesisHash,
+	PowLimit:              regressionPowLimit,
+	PowLimitBits:          0x1e010000,
+	PoWNoRetargeting:      true,
+	CoinbaseMaturity:      100,
+	TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
+	WTEMAHalfLife:         time.Hour * 168,                        // 1 week
 	ReduceMinDifficulty:   true,
 	MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
 	GenerateSupported:     true,
-	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
+	MaxSupportedTxVersion: 5,   // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  120, // 2 hours for regtest
 
 	// Checkpoints ordered from oldest to newest.
@@ -453,7 +450,7 @@ var RegressionNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "rmdl", // always rmdl for reg test net
+	Bech32HRPSegwit: "rnacr", // NACRE reg test net
 
 	// Address encoding magics
 	PrivateKeyID: 0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -473,24 +470,20 @@ var RegressionNetParams = Params{
 var TestNetParams = Params{
 	Name:        "testnet",
 	Net:         wire.TestNet,
-	DefaultPort: "44210",
-	DNSSeeds: []DNSSeed{
-		{"testnet-seeder1.modeloslab.xyz", false},
-		{"testnet-seeder2.modeloslab.xyz", false},
-		{"testnet-seeder3.modeloslab.xyz", false},
-	},
+	DefaultPort: "47210",
+	DNSSeeds:    []DNSSeed{},
 
 	// Chain parameters
-	GenesisBlock:         &testNetGenesisBlock,
-	GenesisHash:          &testNetGenesisHash,
-	PowLimit:             testPowLimit,
-	PowLimitBits:         0x1b00ffff,
-	CoinbaseMaturity:     100,
-	TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:        time.Hour * 168,                        // 1 week
-	ReduceMinDifficulty:  true,
-	MinDiffReductionTime: time.Hour * 4, // 4 hours
-	GenerateSupported:    false,
+	GenesisBlock:          &testNetGenesisBlock,
+	GenesisHash:           &testNetGenesisHash,
+	PowLimit:              testPowLimit,
+	PowLimitBits:          0x1b00ffff,
+	CoinbaseMaturity:      100,
+	TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
+	WTEMAHalfLife:         time.Hour * 168,                        // 1 week
+	ReduceMinDifficulty:   true,
+	MinDiffReductionTime:  time.Hour * 4, // 4 hours
+	GenerateSupported:     false,
 	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  5,
 
@@ -541,7 +534,7 @@ var TestNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "tmdl", // always tmdl for test net
+	Bech32HRPSegwit: "tnacr", // NACRE test net
 
 	// Address encoding magics
 	PrivateKeyID: 0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -561,24 +554,20 @@ var TestNetParams = Params{
 var TestNet2Params = Params{
 	Name:        "testnet2",
 	Net:         wire.TestNet2,
-	DefaultPort: "44212",
-	DNSSeeds: []DNSSeed{
-		{"testnet2-seeder1.modeloslab.xyz", false},
-		{"testnet2-seeder2.modeloslab.xyz", false},
-		{"testnet2-seeder3.modeloslab.xyz", false},
-	},
+	DefaultPort: "47212",
+	DNSSeeds:    []DNSSeed{},
 
 	// Chain parameters
-	GenesisBlock:         &testNet2GenesisBlock,
-	GenesisHash:          &testNet2GenesisHash,
-	PowLimit:             testPowLimit,
-	PowLimitBits:         0x1b00ffff,
-	CoinbaseMaturity:     100,
-	TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:        time.Hour * 168,                        // 1 week
-	ReduceMinDifficulty:  true,
-	MinDiffReductionTime: time.Hour * 4, // 4 hours
-	GenerateSupported:    false,
+	GenesisBlock:          &testNet2GenesisBlock,
+	GenesisHash:           &testNet2GenesisHash,
+	PowLimit:              testPowLimit,
+	PowLimitBits:          0x1b00ffff,
+	CoinbaseMaturity:      100,
+	TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
+	WTEMAHalfLife:         time.Hour * 168,                        // 1 week
+	ReduceMinDifficulty:   true,
+	MinDiffReductionTime:  time.Hour * 4, // 4 hours
+	GenerateSupported:     false,
 	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  5,
 
@@ -629,7 +618,7 @@ var TestNet2Params = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "tmdl", // always tmdl for test net
+	Bech32HRPSegwit: "tnacr", // NACRE test net
 
 	// Address encoding magics
 	PrivateKeyID: 0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -659,18 +648,18 @@ var SimNetParams = Params{
 	DNSSeeds:    []DNSSeed{}, // NOTE: There must NOT be any seeds.
 
 	// Chain parameters
-	GenesisBlock:         &simNetGenesisBlock,
-	GenesisHash:          &simNetGenesisHash,
-	PowLimit:             simNetPowLimit,
-	PowLimitBits:         0x1e010000,
-	PoWNoRetargeting:     true,
-	CoinbaseMaturity:     100,
-	TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-	WTEMAHalfLife:        time.Hour * 168,                        // 1 week
+	GenesisBlock:          &simNetGenesisBlock,
+	GenesisHash:           &simNetGenesisHash,
+	PowLimit:              simNetPowLimit,
+	PowLimitBits:          0x1e010000,
+	PoWNoRetargeting:      true,
+	CoinbaseMaturity:      100,
+	TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
+	WTEMAHalfLife:         time.Hour * 168,                        // 1 week
 	ReduceMinDifficulty:   true,
 	MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
 	GenerateSupported:     true,
-	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
+	MaxSupportedTxVersion: 5,   // inference_tx (3/4) + inferencego_tx (5)
 	MaxTimeOffsetMinutes:  120, // 2 hours for simnet
 
 	// Checkpoints ordered from oldest to newest.
@@ -720,7 +709,7 @@ var SimNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "smdl", // always smdl for sim net
+	Bech32HRPSegwit: "snacr", // NACRE sim net
 
 	// Address encoding magics
 	PrivateKeyID: 0x64, // starts with 4 (uncompressed) or F (compressed)
@@ -763,13 +752,13 @@ func CustomSignetParams(challenge []byte, dnsSeeds []DNSSeed) Params {
 		DNSSeeds:    dnsSeeds,
 
 		// Chain parameters
-		GenesisBlock:         &sigNetGenesisBlock,
-		GenesisHash:          &sigNetGenesisHash,
-		PowLimit:             sigNetPowLimit,
-		PowLimitBits:         0x1d0fffff,
-		CoinbaseMaturity:     100,
-		TargetTimePerBlock:   (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
-		WTEMAHalfLife:        time.Hour * 168,                        // 1 week
+		GenesisBlock:          &sigNetGenesisBlock,
+		GenesisHash:           &sigNetGenesisHash,
+		PowLimit:              sigNetPowLimit,
+		PowLimitBits:          0x1d0fffff,
+		CoinbaseMaturity:      100,
+		TargetTimePerBlock:    (time.Minute * 3) + (time.Second * 14), // 3 Minutes and 14 seconds
+		WTEMAHalfLife:         time.Hour * 168,                        // 1 week
 		ReduceMinDifficulty:   false,
 		MinDiffReductionTime:  (time.Minute * 6) + (time.Second * 28), // TargetTimePerBlock * 2
 		GenerateSupported:     false,

@@ -47,7 +47,7 @@ const auxPowActivationHeight = int32(0)
 // Steps:
 //  1. ZK proof valid AND committed jackpot ≤ modelOSTarget (child) — the parent's real PoW
 //     satisfies MDL. (Pearl need NOT meet its own Pearl target — canonical merged mining.)
-//  3. ModelOSStateHash == block's prevBlock hash (σ_modelos).
+//  3. ModelOSStateHash == wire.AuxPowChildHash(block header) (NACRE: the whole child block, not just prevBlock).
 //  4. PearlHeight > 0.
 //  5. Pearl coinbase contains AuxPowMagic + σ_modelos.
 //  6. CoinbaseBranch reconstructs PearlHeader.MerkleRoot from the coinbase txid.
@@ -108,7 +108,7 @@ func VerifyAuxPow(
 		return fmt.Errorf("auxpow: Pearl ZK proof invalid or below modelOS target: %w", err)
 	}
 
-	// 3. ModelOSStateHash must equal this block's prevBlock hash (σ_modelos, LE).
+	// 3. ModelOSStateHash must equal the child block hash (wire.AuxPowChildHash).
 	if auxPow.ModelOSStateHash != *modelOSStateHash {
 		return fmt.Errorf("auxpow: ModelOSStateHash mismatch: proof=%v block=%v",
 			auxPow.ModelOSStateHash, *modelOSStateHash)
@@ -125,7 +125,7 @@ func VerifyAuxPow(
 	}
 	if wire.ContainsModelosCommitment(auxPow.PearlCoinbaseTx, auxPow.ModelOSStateHash) < 0 {
 		return fmt.Errorf(
-			"auxpow: σ_modelos %v not found in Pearl coinbase (magic 0x4d444c2a + hash)",
+			"auxpow: σ_modelos %v not found in Pearl coinbase (magic 0x4e41432a + hash)",
 			auxPow.ModelOSStateHash)
 	}
 

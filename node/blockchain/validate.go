@@ -898,7 +898,7 @@ func (b *BlockChain) checkBlockContext(block *btcutil.Block, prevNode *blockNode
 		// coinbase Merkle branch) are performed immediately — no deferral.
 		if wire.IsAuxPowBlock(header) {
 			modelOSTarget := CompactToBig(header.Bits)
-			stateHash := header.PrevBlock // σ_modelos (little-endian prevBlock hash)
+			stateHash := wire.AuxPowChildHash(header) // NACRE: commit to the whole child block
 			if err := VerifyAuxPow(
 				block.MsgBlock().AuxPow,
 				blockHeight,

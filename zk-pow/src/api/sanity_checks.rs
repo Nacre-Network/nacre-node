@@ -1,6 +1,6 @@
 use crate::circuit::chip::blake3::program::DWORD_SIZE;
 use crate::{
-    api::proof::{MiningConfiguration, PublicProofParams},
+    api::proof::{Hash256, MiningConfiguration, PublicProofParams},
     api::proof_utils::nbits_to_difficulty,
     circuit::pearl_program::{TILE_D, TILE_H},
     ensure_eq,
@@ -8,6 +8,9 @@ use crate::{
 use anyhow::{Result, ensure};
 use log::info;
 use primitive_types::U256;
+
+/// Minimum accepted noise rank and normalization point for Pearl's rank penalty.
+pub const PENALTY_BASE_RANK: usize = 128;
 
 pub fn public_params_sanity_check(public_params: &PublicProofParams) -> Result<()> {
     let k = public_params.common_dim();
@@ -176,5 +179,87 @@ pub fn extract_difficulty_bound(nbits: u32, config: &MiningConfiguration) -> U25
         U256::MAX
     } else {
         target_difficulty * difficulty_adjustment_factor
+    }
+}
+
+/// Pearl's rank-penalty rule, ported from upstream pearl `zk-pow/src/api/sanity_checks.rs`.
+///
+/// NACRE applies it to the Pearl proof embedded in an AuxPoW block, so a parent proof
+/// that Pearl itself would reject (rank < 128, or a jackpot that only clears the
+/// unpenalized bound) cannot mint a NACRE block. `nbits` is the target the jackpot is
+/// measured against: the NACRE block's bits on the AuxPoW path.
+pub fn check_rank_penalty(config: &MiningConfiguration, hash_jackpot: &Hash256, nbits: u32) -> Result<()> {
+    let rank = config.rank as usize;
+    ensure!(rank >= PENALTY_BASE_RANK, "Rank must be >= {PENALTY_BASE_RANK} || r={rank}");
+    let tile_size = config.rows_pattern.size() as usize * config.cols_pattern.size() as usize;
+    let factor = tile_size * (config.dot_product_length() / rank) * PENALTY_BASE_RANK;
+    ensure!(
+        factor > 0,
+        "Degenerate mining configuration: h*w={} dot_product_length={}",
+        tile_size,
+        config.dot_product_length()
+    );
+    let base = nbits_to_difficulty(nbits);
+    let bound = if base > U256::MAX / factor { U256::MAX } else { base * factor };
+    ensure!(
+        U256::from_little_endian(hash_jackpot) <= bound,
+        "Jackpot condition not satisfied: hash does not meet the rank-penalized difficulty target"
+    );
+    Ok(())
+}
+
+#[cfg(test)]
+mod rank_penalty_tests {
+    use super::*;
+    use crate::api::proof::{MMAType, PeriodicPattern};
+
+    const TEST_NBITS: u32 = 0x1d00ffff;
+
+    fn test_config(rank: usize, common_dim: u32) -> MiningConfiguration {
+        MiningConfiguration {
+            common_dim,
+            rank: rank as u16,
+            mma_type: MMAType::Int7xInt7ToInt32,
+            rows_pattern: PeriodicPattern::from_list(&[0, 8, 64, 72]).unwrap(),
+            cols_pattern: PeriodicPattern::from_list(&[0, 1, 8, 9, 32, 33, 40, 41]).unwrap(),
+            moe: None,
+        }
+    }
+
+    fn jackpot_of(value: U256) -> Hash256 {
+        let mut bytes = [0u8; 32];
+        value.to_little_endian(&mut bytes);
+        bytes
+    }
+
+    #[test]
+    fn rejects_rank_below_base() {
+        let config = test_config(PENALTY_BASE_RANK / 4, 4096);
+        let err = check_rank_penalty(&config, &[0u8; 32], TEST_NBITS).unwrap_err();
+        assert!(err.to_string().contains("Rank must be"), "unexpected error: {err}");
+    }
+
+    #[test]
+    fn penalty_is_neutral_at_base_rank() {
+        let config = test_config(PENALTY_BASE_RANK, 4096);
+        let bound = extract_difficulty_bound(TEST_NBITS, &config);
+        check_rank_penalty(&config, &jackpot_of(bound), TEST_NBITS).unwrap();
+        check_rank_penalty(&config, &jackpot_of(bound + 1), TEST_NBITS).unwrap_err();
+    }
+
+    #[test]
+    fn higher_rank_tightens_the_bound() {
+        // Doubling the rank halves the accepted bound: a jackpot at the unpenalized
+        // bound passes the plain check but fails the rank penalty.
+        let config = test_config(PENALTY_BASE_RANK * 2, 65536);
+        let unpenalized = extract_difficulty_bound(TEST_NBITS, &config);
+        check_rank_penalty(&config, &jackpot_of(unpenalized), TEST_NBITS).unwrap_err();
+        check_rank_penalty(&config, &jackpot_of(unpenalized / 2), TEST_NBITS).unwrap();
+    }
+
+    #[test]
+    fn rejects_degenerate_config_without_panicking() {
+        let config = test_config(PENALTY_BASE_RANK, 64);
+        check_rank_penalty(&config, &[0u8; 32], TEST_NBITS).unwrap_err();
     }
 }

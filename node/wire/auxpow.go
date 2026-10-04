@@ -37,8 +37,8 @@ const auxPowMask = int32(0x1101)
 // AuxPowMagic is the 4-byte marker embedded in the Pearl coinbase scriptSig
 // before the σ_modelos commitment, identifying this as a modelOS merged-mining
 // coinbase.  Analogous to Dogecoin's 0xfabe6d6d merged-mining magic.
-// "MDL*" in ASCII.
-var AuxPowMagic = [4]byte{0x4d, 0x44, 0x4c, 0x2a}
+// "NAC*" in ASCII (NACRE; modelOS uses "MDL*").
+var AuxPowMagic = [4]byte{0x4e, 0x41, 0x43, 0x2a}
 
 // MaxCoinbaseBranchDepth caps the depth of the coinbase Merkle branch.
 // A Pearl block with up to 2^32 transactions needs depth 32.  Practical
@@ -355,6 +355,18 @@ func VerifyCoinbaseMerkleRoot(auxPow *AuxPowData, coinbaseTxid chainhash.Hash) (
 		current = chainhash.DoubleHashH(combined[:])
 	}
 	return current, nil
+}
+
+// AuxPowChildHash is the NACRE block identity that the Pearl coinbase commits to:
+// the header hash with ProofCommitment zeroed. ProofCommitment hashes the
+// AuxPowData (which contains the Pearl coinbase), so it cannot be part of the
+// commitment; every other field is, and MerkleRoot binds the NACRE coinbase.
+// Committing only to PrevBlock would let anyone re-attach an AuxPowData to a
+// different block on the same parent (for example one paying themselves).
+func AuxPowChildHash(header *BlockHeader) chainhash.Hash {
+	h := *header
+	h.ProofCommitment = chainhash.Hash{}
+	return h.BlockHash()
 }
 
 // IsAuxPowBlock reports whether a block carries AuxPoW data.

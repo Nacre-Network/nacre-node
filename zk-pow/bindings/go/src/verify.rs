@@ -8,7 +8,7 @@ use std::slice;
 
 use crate::common::MAX_ZK_PROOF_SIZE;
 use zk_pow::api::proof::{IncompleteBlockHeader, PublicProofParams, SeedDerivation, ZKProof};
-use zk_pow::api::verify;
+use zk_pow::api::{sanity_checks, verify};
 use zk_pow::ffi::plain_proof::PlainProof;
 
 use crate::common::{acquire_cache, catch_panic, set_error_msg, CZKProof};
@@ -29,6 +29,7 @@ unsafe fn verify_zk_proof_inner(
     nbits_override: Option<u32>,
     error_msg_out: *mut c_char,
     derivations: &[SeedDerivation],
+    rank_penalty: bool,
 ) -> i32 {
     // Wrap in catch_unwind to prevent panics from crossing FFI boundary
     let result = catch_panic(|| {
@@ -89,6 +90,14 @@ unsafe fn verify_zk_proof_inner(
             };
             match verify::verify_block_cached_circuits_only(&params, &zk_proof, &cache, nbits_override) {
                 Ok(_) => {
+                    // NACRE: a Pearl parent must also satisfy Pearl's rank-penalty rule.
+                    if rank_penalty {
+                        let nbits = nbits_override.unwrap_or(params.block_header.nbits);
+                        if let Err(e) = sanity_checks::check_rank_penalty(&params.mining_config, &params.hash_jackpot(), nbits) {
+                            set_error_msg(error_msg_out, &format!("rank penalty rule violated: {}", e));
+                            return 1;
+                        }
+                    }
                     set_error_msg(error_msg_out, "Proof verified successfully");
                     return 0;
                 }
@@ -134,7 +143,7 @@ pub unsafe extern "C" fn verify_zk_proof_v2(
     zk_proof: *const CZKProof,
     error_msg_out: *mut c_char,
 ) -> i32 {
-    verify_zk_proof_inner(block_header, zk_proof, None, error_msg_out, &[SeedDerivation::Legacy])
+    verify_zk_proof_inner(block_header, zk_proof, None, error_msg_out, &[SeedDerivation::Legacy], false)
 }
 
 /// Verify a ZK proof against public parameters, overriding the difficulty with the given nbits.
@@ -158,7 +167,7 @@ pub unsafe extern "C" fn verify_zk_proof_v2_with_nbits(
     nbits_override: u32,
     error_msg_out: *mut c_char,
 ) -> i32 {
-    verify_zk_proof_inner(block_header, zk_proof, Some(nbits_override), error_msg_out, &[SeedDerivation::Legacy])
+    verify_zk_proof_inner(block_header, zk_proof, Some(nbits_override), error_msg_out, &[SeedDerivation::Legacy], false)
 }
 
 /// AuxPoW-only verify: accepts an embedded Pearl proof under EITHER noise-seed derivation.
@@ -199,6 +208,7 @@ pub unsafe extern "C" fn verify_zk_proof_auxpow_with_nbits(
         Some(nbits_override),
         error_msg_out,
         &[SeedDerivation::Salted, SeedDerivation::Legacy],
+        true,
     )
 }
 

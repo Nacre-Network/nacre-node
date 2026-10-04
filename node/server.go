@@ -64,7 +64,7 @@ const (
 var (
 	// userAgentName is the user agent name and is used to help identify
 	// ourselves to other peers on the network.
-	userAgentName = "modelosd"
+	userAgentName = "nacred"
 
 	// userAgentVersion is the user agent version and is used to help
 	// identify ourselves to other peers on the network. It uses the full

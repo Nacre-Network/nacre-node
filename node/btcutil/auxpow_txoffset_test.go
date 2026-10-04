@@ -35,7 +35,7 @@ func TestAuxPowBlockTxOffset(t *testing.T) {
 	// commitment), and a 32-byte witness reserved value.
 	coinbase := wire.NewMsgTx(1)
 	prevOut := wire.NewOutPoint(&chainhash.Hash{}, wire.MaxPrevOutIndex)
-	txIn := wire.NewTxIn(prevOut, []byte{0x03, 0x07, 0x00, 0x00, 0x4d, 0x44, 0x4c, 0x2a}, nil)
+	txIn := wire.NewTxIn(prevOut, []byte{0x03, 0x07, 0x00, 0x00, 0x4e, 0x41, 0x43, 0x2a}, nil)
 	txIn.Witness = wire.TxWitness{make([]byte, 32)} // segwit commitment reserved value
 	coinbase.AddTxIn(txIn)
 	coinbase.AddTxOut(wire.NewTxOut(50_00000000, append([]byte{0x51, 0x20}, make([]byte, 32)...)))
