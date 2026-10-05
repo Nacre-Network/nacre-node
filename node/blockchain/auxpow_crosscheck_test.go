@@ -70,7 +70,7 @@ func fixtureTarget(t *testing.T, fx auxPowFixture) (uint32, *chainhash.Hash) {
 // order — this fails.
 func TestVerifyAuxPow_PoolConstructedFixture(t *testing.T) {
 	// NACRE: testdata/auxpow_verify_fixture.json was mined by the modelOS pool with the
-	// "MDL*" marker. Regenerate it with gen_auxpow_fixture.py once a NAC* pool exists.
+	// "MDL*" marker. Regenerate it with gen_auxpow_fixture.py using the NAC* marker.
 	t.Skip("NACRE: fixture still carries the modelOS MDL* marker")
 	auxPow, fx := loadAuxPowFixture(t)
 	bits, stateHash := fixtureTarget(t, fx)
