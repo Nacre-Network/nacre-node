@@ -6,7 +6,7 @@
 # TLS termination, auth passthrough, rate limiting, and GBT caching.
 #
 # Usage:
-#   ./proxy/proxy_test.sh --node-rpc=node1.testnet.pearlresearch.ai:44111 \
+#   ./proxy/proxy_test.sh --node-rpc=node1.example.com:44111 \
 #                         --rpc-user=admin --rpc-pass=pass
 #
 # All flags can also be set via environment variables:

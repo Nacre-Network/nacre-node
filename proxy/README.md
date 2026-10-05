@@ -206,7 +206,7 @@ any running Pearl node:
 
 ```bash
 ./proxy/proxy_test.sh \
-    --node-rpc=node1.internal.pearlresearch.ai:44107 \
+    --node-rpc=node1.example.com:44107 \
     --rpc-user=admin \
     --rpc-pass=pass
 ```
