@@ -1,239 +1,104 @@
-# modelOS
+# NACRE
 
-[![Blockchain / Build and Test](https://github.com/modeloslab/modelos/actions/workflows/blockchain_ci.yml/badge.svg)](https://github.com/modeloslab/modelos/actions/workflows/blockchain_ci.yml)
-[![Integration Tests CI](https://github.com/modeloslab/modelos/actions/workflows/integration_tests_ci.yml/badge.svg)](https://github.com/modeloslab/modelos/actions/workflows/integration_tests_ci.yml)
-[![Miner CI](https://github.com/modeloslab/modelos/actions/workflows/miner_ci.yml/badge.svg)](https://github.com/modeloslab/modelos/actions/workflows/miner_ci.yml)
-[![Miner GPU CI](https://github.com/modeloslab/modelos/actions/workflows/miner_gpu_ci.yml/badge.svg)](https://github.com/modeloslab/modelos/actions/workflows/miner_gpu_ci.yml)
-[![Desktop Wallet CI/CD](https://github.com/modeloslab/modelos/actions/workflows/pearl-desktop-wallet.yml/badge.svg)](https://github.com/modeloslab/modelos/actions/workflows/pearl-desktop-wallet.yml)
-[![Plonky2 Tests](https://github.com/modeloslab/modelos/actions/workflows/plonky2_ci.yml/badge.svg)](https://github.com/modeloslab/modelos/actions/workflows/plonky2_ci.yml)
-[![Rust CI](https://github.com/modeloslab/modelos/actions/workflows/rust_ci.yml/badge.svg)](https://github.com/modeloslab/modelos/actions/workflows/rust_ci.yml)
-[![ISC License](https://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
+[![Blockchain CI](https://github.com/Nacre-Network/nacre-node/actions/workflows/blockchain_ci.yml/badge.svg)](https://github.com/Nacre-Network/nacre-node/actions/workflows/blockchain_ci.yml)
+[![ISC License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
 
-**modelOS is a verifiable Proof-of-Useful-Work Layer 1 for decentralised AI inference.**
-Mining is real AI computation: instead of arbitrary hashing, miners run the matrix
-multiplications that power neural-network inference, and every block carries a Plonky2
-zero-knowledge proof that the computation was performed correctly. The energy spent on
-consensus is not discarded — it becomes intelligence. The native asset, **MDL**, is earned
-exclusively by performing genuine AI work.
+NACRE (NACR) is a proof-of-work blockchain that is merge-mined with [Pearl](https://github.com/pearl-research-labs/pearl).
+A Pearl proof is produced once and secures both chains, so miners earn NACR on top of their Pearl work.
+Website: <https://nacre.network>
 
-modelOS builds the full infrastructure layer on top of the ZK-PoW foundation introduced by
-the [Pearl protocol](https://arxiv.org/abs/2504.09971), and is **merge-mined with Pearl**
-via AuxPoW — a single GPU run earns both MDL and Pearl rewards.
+**This repository is a fork.** It starts from [modelOS](https://github.com/modeloslab/modelos) at commit `37c9b0e1`,
+which is built on Pearl's node, and it keeps the full upstream history. Everything NACRE changes sits in the commits
+on top of it:
 
-The network is organised into three interlocking layers:
+```bash
+git log 37c9b0e1..HEAD
+git diff 37c9b0e1..HEAD --stat
+```
 
-- **Layer 1 — The Chain.** A UTXO proof-of-work blockchain secured by zero-knowledge proofs
-  of real matrix multiplication. Difficulty is governed by **Colossus 2.0** (absolute ASERT,
-  integer-exact, ~194 s target block time).
-- **Layer 2 — The Market.** The same GPUs that mine the chain serve on-chain inference
-  requests. Users lock an MDL fee; miners compete to serve the request and submit a proof;
-  the first valid proof claims the fee. No API provider, no custodian.
-- **Layer 3 — The Application Layer.** Nova Script AI-native smart contracts, an on-chain
-  agentic layer, a Zcash-inspired privacy stack, and consumer apps (Compute chat, ModelCode).
+## What NACRE changes
 
-This monorepo contains the full node, wallet, SPV light client, ZK proving system, GPU
-miners, the inference pool, and supporting tools.
+| | |
+|---|---|
+| Maximum supply | 21,000,000 NACR |
+| Block reward | 10 NACR, halving every 1,050,000 blocks |
+| Target block time | 120 seconds |
+| Difficulty | ASERT, 3.2 hour half-life |
+| Development fund | 3% of each block reward until block 1,050,000, enforced as a coinbase output |
+| Premine | None |
+| Addresses | Taproot (bech32m), `nacr1p...` on mainnet |
 
-### Transaction model
+- **Merged mining with Pearl.** The `NAC*` marker in the Pearl coinbase commits to the NACRE block. Pools use two RPC
+  calls, `createauxblock <address>` and `submitauxblock <hash> <auxpow>`. NACRE nodes verify the proof themselves and do
+  not need a Pearl node. AuxPoW verification is stricter than in modelOS.
+- **Own network identity.** Genesis blocks, address prefixes, ports and network magics are distinct from modelOS and Pearl.
+- **Inherited and unchanged.** The inference transaction types of modelOS are still part of the protocol code. NACRE
+  does not use them.
 
-modelOS uses a Bitcoin-style UTXO ledger with three transaction versions:
+## Networks
 
-| Version | Name | Purpose |
-|---------|------|---------|
-| **v1** | Standard transfer | Moves MDL between addresses (Bitcoin-compatible). |
-| **v3** | Inference Request | Locks an MDL fee under a covenant encoding the model tier, a prompt commitment, and the requester key — broadcasting an AI job to the market. |
-| **v4** | Inference Proof | Carries the miner's proof of correct inference and claims the locked fee; the script releases payment only if the proof is valid and binds to the exact request. |
+| Network | P2P | RPC | Address prefix |
+|---------|-------|-------|--------|
+| Mainnet | 47208 | 47107 | `nacr` |
+| Testnet | 47210 | 47109 | `tnacr` |
+| Testnet2 | 47212 | 47111 | `tnacr` |
+| Simnet | 18555 | 18556 | `snacr` |
+| Regtest | 18444 | 18334 | `rnacr` |
 
-A request is settled by the first valid proof confirmed within a five-block window
-(~16 minutes); if none arrives, the fee is automatically refunded to the requester.
-
-## Roadmap
-
-Layer 1 (ZK-PoW consensus, Colossus 2.0, AuxPoW merge-mining) and the core inference
-marketplace (v1/v3/v4 transactions, open miner competition, automatic refunds, the
-8B/14B/32B/70B consensus tiers) are **live**. The phases below are **under construction** and
-developed in a **private repository** ahead of mainnet activation; each ships subject to
-community governance. See [ROADMAP.md](ROADMAP.md) for the detailed status.
-
-- **🚧 Market Depth** — expanding the inference market, model ecosystem, and EVM connectivity.
-  - *Frontier model tiers* — MoE proof circuits for gpt-oss (120B / ~20B active), DeepSeek-V3
-    & DeepSeek-R1 (671B / ~37B active), Qwen3-MoE, Llama-4 MoE, and Mixtral.
-  - *Model hosting economy* — permissionless non-consensus hosting (paid per-hour or in bulk),
-    image-model hosting (Flux, Stable Diffusion), staking/slash for uptime, and a decentralized
-    GPU shard pool that serves 700B+ models split across many miners.
-  - *Marketplace extensions* — Inference Futures, a LoRA adapter marketplace with automatic
-    royalties, and a bidirectional MDL ↔ wMDL bridge so any EVM contract can fund inference.
-- **🚧 Privacy Architecture** — a Zcash-inspired shielded pool across transfers, inference,
-  model weights, and fine-tuning; shielded/private inference; zk-Inference proofs; and a
-  general-purpose zkML layer.
-- **🚧 Programmable AI** — Nova Script, a Solidity-like contract language with `INFER()`,
-  `EMBED()`, and `CLASSIFY()` as native opcodes; the first contracts (Cognitive Swap,
-  inference escrow, revenue-share); and the on-chain agentic layer (agent registry,
-  contract-storage memory, multi-agent orchestration, bounties).
-- **🚧 Network Intelligence** — the MDL-native model: a model trained, owned, and governed by
-  the network itself through a recursive distillation loop, plus protocol upgrades
-  (floating-point PoUW, post-quantum addresses).
-
-## Repository Layout
-
-| Directory | Description |
-|-----------|-------------|
-| [`node/`](node/) | **modelosd** — reference implementation of the modelOS protocol (full node, PoUW + inference marketplace) |
-| [`wallet/`](wallet/) | **oyster** — HD wallet daemon with JSON-RPC and gRPC interfaces |
-| [`spv/`](spv/) | modelOS light client — privacy-preserving SPV client using compact block filters |
-| [`dnsseeder/`](dnsseeder/) | DNS seeder for the modelOS network |
-| [`coredns-dnsseed/`](coredns-dnsseed/) | CoreDNS plugin — production DNS seeder |
-| [`proxy/`](proxy/) | Caddy reverse-proxy sidecar for RPC TLS termination and rate limiting |
-| [`xmss/`](xmss/) | XMSS post-quantum signature scheme (C + Go FFI) |
-| [`zk-pow/`](zk-pow/) | ZK proof-of-work circuit and verifier (Rust, Plonky2/STARKy) |
-| [`pearl-blake3/`](pearl-blake3/) | Blake3 hashing utilities (Rust) |
-| [`plonky2/`](plonky2/) | Plonky2 SNARK proving system (Rust, vendored) |
-| [`miner/`](miner/) | GPU mining + inference infrastructure — standalone miner, vLLM miner, inference pool, and provider bridge (Rust/C#/Python/CUDA) |
-| [`py-pearl-mining/`](py-pearl-mining/) | Python bindings for the mining / proof primitives (Rust/PyO3) |
-| [`apps/`](apps/) | Frontend applications (Compute chat app, desktop wallet — pnpm/Turborepo) |
-| [`tools/`](tools/) | Go development tool dependencies |
-
-## Prerequisites
-
-- [Go](https://golang.org) 1.26 or newer
-- [Rust](https://rustup.rs) toolchain (for ZK and hashing crates)
-- C compiler (for XMSS library)
-- [Python](https://python.org) 3.12 and [uv](https://docs.astral.sh/uv/) (for the GPU miner packages)
-- [Task](https://taskfile.dev) runner
-- [CUDA toolkit](https://developer.nvidia.com/cuda-toolkit) (for the GPU miner)
+Mainnet is not launched. A public testnet runs, with seed nodes at `seed1.nacre.network` and
+`seed2.nacre.network` on port 47210.
 
 ## Building
 
-```bash
-task build              # build everything (blockchain + GPU miner)
-task build:blockchain   # modelosd, prlctl, oyster → bin/
-task build:miner        # install GPU miner Python packages
-task build:modelosd     # modelosd node daemon only
-```
-
-## Running a Node and Miner
-
-The setup flow: **build** > **create wallet** > **start node** > **start miner**.
-
-### 1. Create a wallet and get a mining address
+Prerequisites: Go 1.26+, a Rust toolchain, a C compiler and [Task](https://taskfile.dev).
 
 ```bash
-./bin/oyster -u rpcuser -P rpcpass --create
+task build:blockchain   # bin/modelosd (the NACRE node), bin/prlctl, bin/oyster (wallet)
 ```
 
-Follow the prompts to set a passphrase and record your seed. Then start the
-wallet and generate a Taproot mining address (an `mdl1p…` address):
+The first build generates the ZK verifier cache, which takes about 20 seconds.
+
+## Running a testnet node
 
 ```bash
-./bin/oyster -u rpcuser -P rpcpass &
-./bin/prlctl -u rpcuser -P rpcpass -s https://localhost:44207 getnewaddress
+./bin/modelosd --testnet --txindex \
+  --addpeer=seed1.nacre.network:47210 \
+  --addpeer=seed2.nacre.network:47210
 ```
 
-### 2. Start the node
+See `node/sample-modelos.conf` for all options.
 
-```bash
-./bin/modelosd \
-  --rpcuser=rpcuser \
-  --rpcpass=rpcpass \
-  --rpclisten=0.0.0.0:44107 \
-  --miningaddr=<your-taproot-address> \
-  --txindex
-```
+## Mining
 
-Key flags: `--testnet` / `--simnet` for non-mainnet, `--notls` to disable TLS,
-`--debuglevel=debug` for verbose logs. See `node/sample-modelos.conf` for all
-options.
+NACRE is mined on NVIDIA GPUs with the Pearl algorithm (pearlhash) through a pool. Pool software is not part of this
+repository. The public pool listens on `stratum+tcp://pool.nacre.network:3333`: set your own NACRE address as the
+wallet, and a block you find pays you directly. Live statistics are at <https://nacre.network/pool/>.
 
-| Network  | RPC   | P2P   | Wallet Server |
-|----------|-------|-------|---------------|
-| Mainnet  | 44107 | 44108 | 44207         |
-| Testnet  | 44109 | 44110 | 44209         |
-| Testnet2 | 44111 | 44112 | 44211         |
-| Simnet   | 18556 | 18555 | 18554         |
-| Regtest  | 18334 | 18444 | 18332         |
+## Repository layout
 
-### 3. Start the miner
-
-The vLLM miner has two components: **modelos-gateway** (bridge to the node) and
-**vllm-miner** (GPU mining + inference via vLLM). The gateway connects to
-`modelosd` over JSON-RPC and exposes a mining interface on `/tmp/pearlgw.sock`
-(UDS) or port 8337 (TCP, set `MINER_RPC_TRANSPORT=tcp`).
-
-```bash
-export PEARLD_RPC_URL="http://localhost:44107"
-export PEARLD_RPC_USER="rpcuser"
-export PEARLD_RPC_PASSWORD="rpcpass"
-export PEARLD_MINING_ADDRESS="<your-taproot-address>"   # mdl1p… — receives MDL rewards + inference fees
-modelos-gateway start
-```
-
-To run the full stack with Docker:
-
-```bash
-docker buildx build -t vllm_miner . -f miner/vllm-miner/Dockerfile
-
-docker run --rm -it --gpus all --network host \
-  -e PEARLD_RPC_URL=http://localhost:44107 \
-  -e PEARLD_RPC_USER=rpcuser \
-  -e PEARLD_RPC_PASSWORD=rpcpass \
-  -v ~/.cache/huggingface:/root/.cache/huggingface \
-  --shm-size 8g \
-  vllm_miner:latest \
-  deepseek-ai/DeepSeek-R1-Distill-Llama-70B \
-  --host 0.0.0.0 --port 8000
-```
-
-> **The public GPU miner** lives in [`miner/vllm-miner/`](miner/vllm-miner/) — it serves AI
-> inference and mines in the same GPU run, and is the supported way to contribute compute to
-> the network. To mine against the modelOS pool instead of a local node, configure it with
-> the `MODELOS_POOL_*` settings (see the miner's README); a single process drives all visible
-> GPUs, one worker per card.
+| Path | Contents |
+|------|----------|
+| `node/` | Full node daemon, consensus rules and RPC |
+| `wallet/` | Oyster wallet daemon |
+| `spv/` | SPV light client |
+| `zk-pow/`, `plonky2/` | Zero-knowledge proof of work: circuits and verifier |
+| `xmss/` | Post-quantum signatures |
 
 ## Testing
 
 ```bash
-task test               # run all tests (Go + Python)
-task test:go            # Go tests with race detector
-task test:python        # full Python test suite
-task test:python:basic  # Python tests (excludes integration/perf/slow)
+task test:go
 ```
-
-## Formatting and Linting
-
-```bash
-task fmt            # format all (Go + Rust + Python)
-task lint:python    # lint Python code with ruff
-task tidy           # tidy Go dependencies
-```
-
-Scoped variants are available: `task fmt:go`, `task fmt:rust`, `task fmt:python`,
-`task lint:go`, `task lint:rust`, `task lint:python`.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Security
 
-See [SECURITY.md](SECURITY.md).
+Do not open public issues for vulnerabilities. Write to <contact@nacre.network>, see [SECURITY.md](SECURITY.md).
 
 ## License
 
-modelOS is licensed under the [copyfree](http://copyfree.org) ISC License.
-See [LICENSE](LICENSE) for details.
+ISC, see [LICENSE](LICENSE).
 
 ## Acknowledgments
 
-modelOS stands on the shoulders of **Pearl Research** and the entire Pearl team. Their
-work on zero-knowledge Proof-of-Useful-Work — proving that real, useful computation can
-replace wasteful hashing as the basis of consensus — is the foundation everything here is
-built on. We are deeply grateful for their incredible research and engineering, and for
-making it open; modelOS would not exist without it. Thank you. 🙏
-
-modelOS is built on the ZK-PoW foundation introduced by the
-[Pearl protocol](https://arxiv.org/abs/2504.09971), and its blockchain infrastructure was
-originally forked from the following open-source projects:
-
-- [btcd](https://github.com/btcsuite/btcd) — full node implementation
-- [btcwallet](https://github.com/btcsuite/btcwallet) — wallet daemon
-- [neutrino](https://github.com/lightninglabs/neutrino) — SPV light client
+NACRE builds on [Pearl](https://github.com/pearl-research-labs/pearl), [modelOS](https://github.com/modeloslab/modelos)
+and the btcd and btcsuite lineage. Grown on Pearl.
