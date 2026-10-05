@@ -1,27 +1,17 @@
-# Contributing to Pearl
+# Contributing to NACRE
 
 ## Getting Started
 
 1. Clone the repository
-2. Install prerequisites: Go 1.26+, Rust toolchain, C compiler, Python 3.12, [uv](https://docs.astral.sh/uv/), [Task](https://taskfile.dev), CUDA toolkit (for vLLM miner)
-3. Build: `task build`
-4. Test: `task test`
-
-You can also build or test specific components:
-
-```
-task build:blockchain   # pearld, prlctl, oyster
-task build:miner        # vLLM miner Python packages
-task test:go            # Go tests only
-task test:python        # full Python test suite
-task test:python:basic  # Python tests (excludes integration/perf/slow)
-```
+2. Install prerequisites: Go 1.26+, Rust toolchain, C compiler, [Task](https://taskfile.dev)
+3. Build: `task build:blockchain`
+4. Test: `task test:go`
 
 ## Submitting Changes
 
-1. Create a branch from `master`
-2. Keep PRs focused — one fix or feature per PR
-3. Run `task fmt lint:python tidy` before pushing
+1. Create a branch from `main`
+2. Keep PRs focused: one fix or feature per PR
+3. Run `task fmt tidy` before pushing
 4. All CI checks must pass
 5. Bug fixes should include a test that reproduces the issue
 
@@ -31,7 +21,7 @@ Use the format: `type(scope): description`
 
 ```
 fix(node): correct block validation for edge case
-feat(miner): add GPU memory monitoring
+feat(node): add a mining RPC
 docs: update build instructions
 ```
 
