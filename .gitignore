@@ -5,16 +5,13 @@ modeloswalletscopy.json
 /deploy/
 /docs/
 /miner/
-apps/compute/
 /scripts/
-.claude/
 
 # dCloud — unreleased/proprietary, NEVER commit to the public node repo
 dcloud-*/
 /dcloud-coordinator/
 /dcloud-plugin/
 /dcloud-bridge/
-apps/dcloud/
 miner/modelos-dcloud/
 dcloud_*.py
 **/dcloud-unified/
@@ -55,7 +52,6 @@ downloads/
 eggs/
 .eggs/
 lib/
-!apps/**/lib
 lib64/
 parts/
 sdist/
@@ -212,12 +208,9 @@ attn_test.py
 *.ipynb
 notebooks/
 bin/
-!apps/**/bin
 simnet_data
 
 # Cursor
-.cursor
-.aider*
 
 # Library .lock file
 miner/blake3-utils/*.lock
@@ -257,9 +250,6 @@ miner/modelos-pool/frontend/node_modules/
 miner/modelos-pool/frontend/out/
 
 # Desktop wallet build outputs (binaries, installers)
-apps/apps/pearl-desktop-wallet/dist/
-apps/apps/pearl-desktop-wallet/out/
-apps/apps/pearl-desktop-wallet/resources/bin/
 
 # Node chain data (never commit — gigabytes of blockchain)
 simnet_data/
