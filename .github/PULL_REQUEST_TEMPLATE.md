@@ -8,7 +8,7 @@
 
 ## Scope
 
-<!-- Which component(s)? e.g. node, wallet, miner, zk-pow, spv -->
+<!-- Which component(s)? e.g. node, wallet, zk-pow, spv -->
 
 ## Changes
 

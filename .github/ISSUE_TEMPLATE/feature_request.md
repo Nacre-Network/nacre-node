@@ -6,7 +6,7 @@ labels: enhancement
 
 ## Component
 
-<!-- e.g. node, wallet, miner, zk-pow, spv -->
+<!-- e.g. node, wallet, zk-pow, spv -->
 
 ## Description
 
