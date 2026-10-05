@@ -2,28 +2,25 @@
 
 ## Scope
 
-This policy covers all components in the Pearl monorepo:
+This policy covers all components in this repository:
 
-- **pearld** — full node (`node/`)
-- **Oyster** — wallet daemon (`wallet/`)
+- **modelosd** - full node (`node/`)
+- **Oyster** - wallet daemon (`wallet/`)
 - **SPV client** (`spv/`)
 - **ZK proof-of-work** circuits and verifier (`zk-pow/`, `plonky2/`)
-- **Mining infrastructure** (`miner/`, `py-pearl-mining/`)
 - **XMSS** post-quantum signatures (`xmss/`)
 - **DNS seeder** (`dnsseeder/`)
-- **Frontend applications** (`apps/`)
 
 ## Supported Versions
 
 Only the latest release is actively supported. Critical fixes may be
-backported to prior releases at the team's discretion.
+backported to prior releases at the maintainers' discretion.
 
 ## Reporting a Vulnerability
 
 **Do not open a public issue for security vulnerabilities.**
 
-Use [GitHub's private vulnerability reporting](https://github.com/pearl-research-labs/pearl/security/advisories/new)
-to submit a report. Include:
+Write to **contact@nacre.network**. Include:
 
 - Description of the vulnerability
 - Steps to reproduce or a proof-of-concept
@@ -39,5 +36,5 @@ unless anonymity is requested.
 
 ## Contact
 
-- [Report a vulnerability](https://github.com/pearl-research-labs/pearl/security/advisories/new)
-- Website: https://pearlresearch.ai
+- contact@nacre.network
+- Website: https://nacre.network

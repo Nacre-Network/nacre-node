@@ -13,5 +13,5 @@ all backgrounds and experience levels.
 
 ## Enforcement
 
-Violations may be reported to **conduct@pearlresearch.ai**. Maintainers may
+Violations may be reported to **contact@nacre.network**. Maintainers may
 remove comments, close issues, or ban contributors at their discretion.
