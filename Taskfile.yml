@@ -12,9 +12,10 @@ tasks:
     # Write to the EXACT paths embedded via include_bytes! (v2_cache.bin + v1_cache.bin).
     # Writing a different filename silently embeds the stale committed cache → circuit
     # mismatch ("Invalid cache magic bytes") that wedges the verifier.
+    # A fresh clone holds Git LFS pointers (about 130 bytes), not the real files: rebuild those too.
     status:
-      - test -s src/circuit/v2_cache.bin
-      - test -s src/v1/v1_cache.bin
+      - test "$(wc -c < src/circuit/v2_cache.bin)" -gt 1024
+      - test "$(wc -c < src/v1/v1_cache.bin)" -gt 1024
     cmds:
       - cargo run --release --no-default-features --bin build_cache src/circuit/v2_cache.bin src/v1/v1_cache.bin
 
@@ -64,17 +65,10 @@ tasks:
     desc: Build all blockchain binaries (modelosd, prlctl, oyster)
     deps: [build:modelosd, build:prlctl, build:oyster]
 
-  build:miner:
-    desc: Install miner Python packages (Linux/Windows only; the GPU miner requires CUDA)
-    platforms: [linux, windows]
-    cmds:
-      - uv sync --all-packages
-
   build:
-    desc: Build all (blockchain + miner)
+    desc: Build all blockchain binaries
     cmds:
       - task: build:blockchain
-      - task: build:miner
 
   clean:
     desc: Remove compiled binaries and test-generated files
@@ -86,10 +80,9 @@ tasks:
       - find . -name coverage.txt -type f -delete
 
   test:
-    desc: Run all tests (Go + Python)
+    desc: Run all tests
     cmds:
       - task: test:go
-      - task: test:python
 
   test:go:
     desc: Run Go tests with race detector
@@ -101,16 +94,6 @@ tasks:
       GOTESTSUM_JUNITFILE: '{{.GOTESTSUM_JUNITFILE | default ""}}'
     cmds:
       - go tool -modfile tools/go.mod gotestsum --format {{.GOTESTSUM_FORMAT}} {{if .GOTESTSUM_JUNITFILE}}--junitfile {{.GOTESTSUM_JUNITFILE}}{{end}} -- -race -tags=rpctest,xmss,zkpow -test.timeout=45m ./...
-
-  test:python:basic:
-    desc: Run Python tests (excludes integration, performance, and slow)
-    cmds:
-      - uv run pytest -m "not integration and not performance and not slow" miner/
-
-  test:python:
-    desc: Run full Python test suite
-    cmds:
-      - uv run pytest miner/
 
   fmt:rust:
     desc: Format Rust code
