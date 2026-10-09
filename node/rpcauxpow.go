@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/modelos/modelos/node/btcjson"
 	"github.com/modelos/modelos/node/btcutil"
 	"github.com/modelos/modelos/node/chaincfg/chainhash"
+	"github.com/modelos/modelos/node/mining"
 	"github.com/modelos/modelos/node/wire"
 )
 
@@ -30,6 +32,9 @@ import (
 // CreateAuxBlockCmd defines the createauxblock JSON-RPC command.
 type CreateAuxBlockCmd struct {
 	Address string
+	// Payouts is an optional JSON array [{"address": "...", "weight": n}] that
+	// splits the miner part of the coinbase (shared pool payouts).
+	Payouts *string
 }
 
 // SubmitAuxBlockCmd defines the submitauxblock JSON-RPC command.
@@ -68,7 +73,25 @@ func handleCreateAuxBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct
 		}
 	}
 
-	tmpl, err := s.cfg.Generator.NewBlockTemplate(addr)
+	var payouts []mining.Payout
+	if c.Payouts != nil && *c.Payouts != "" {
+		var raw []struct {
+			Address string `json:"address"`
+			Weight  int64  `json:"weight"`
+		}
+		if err := json.Unmarshal([]byte(*c.Payouts), &raw); err != nil || len(raw) == 0 || len(raw) > mining.MaxPayouts {
+			return nil, &btcjson.RPCError{Code: btcjson.ErrRPCInvalidParameter, Message: "payouts must be a JSON array of 1 to 150 {address, weight}"}
+		}
+		for _, p := range raw {
+			pa, err := btcutil.DecodeAddress(p.Address, s.cfg.ChainParams)
+			if err != nil || !pa.IsForNet(s.cfg.ChainParams) || p.Weight <= 0 {
+				return nil, &btcjson.RPCError{Code: btcjson.ErrRPCInvalidAddressOrKey, Message: "Invalid payout: " + p.Address}
+			}
+			payouts = append(payouts, mining.Payout{Address: pa, Weight: p.Weight})
+		}
+	}
+
+	tmpl, err := s.cfg.Generator.NewBlockTemplatePayouts(addr, payouts)
 	if err != nil {
 		return nil, internalRPCError("Failed to create block template: "+err.Error(), "")
 	}
@@ -98,6 +121,15 @@ func handleCreateAuxBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct
 	}
 	auxTemplates.Unlock()
 
+	// What the miners get: every coinbase output except the dev fund and the witness commitment.
+	var minerValue int64
+	for _, out := range block.Transactions[0].TxOut {
+		if bytes.Equal(out.PkScript, s.cfg.ChainParams.DevFundScript) || (len(out.PkScript) > 0 && out.PkScript[0] == 0x6a) {
+			continue
+		}
+		minerValue += out.Value
+	}
+
 	// Internal (LE) byte order, exactly what wire.ContainsModelosCommitment
 	// looks for after the magic.
 	commitment := append(wire.AuxPowMagic[:], childHash[:]...)
@@ -108,7 +140,7 @@ func handleCreateAuxBlock(s *rpcServer, cmd interface{}, closeChan <-chan struct
 		Height:            tmpl.Height,
 		Bits:              fmt.Sprintf("%08x", header.Bits),
 		Target:            fmt.Sprintf("%064x", blockchain.CompactToBig(header.Bits)),
-		CoinbaseValue:     block.Transactions[0].TxOut[0].Value,
+		CoinbaseValue:     minerValue,
 	}, nil
 }
 
@@ -169,6 +201,7 @@ func init() {
 	for k, v := range map[string]string{
 		"createauxblock--synopsis":               "Creates a NACRE block template for merged mining and returns the coinbase commitment to embed in the Pearl parent.",
 		"createauxblock-address":                 "NACRE address paid by the block coinbase",
+		"createauxblock-payouts":                 "Optional JSON array of {address, weight} that splits the miner part of the coinbase between several addresses",
 		"createauxblockresult-hash":              "Template id (the child block hash) to pass to submitauxblock",
 		"createauxblockresult-commitment":        "Hex bytes (NAC* || child block hash, LE) to place in the Pearl coinbase scriptSig",
 		"createauxblockresult-previousblockhash": "Hash of the NACRE block this template builds on",

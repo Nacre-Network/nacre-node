@@ -229,6 +229,51 @@ func standardCoinbaseScript(nextBlockHeight int32, extraNonce uint64) ([]byte, e
 		Script()
 }
 
+// MaxPayouts bounds how many outputs share the miner part of a coinbase.
+const MaxPayouts = 150
+
+// Payout is one share of the miner part of a coinbase. Weights are relative:
+// an address with twice the weight gets twice the value.
+type Payout struct {
+	Address btcutil.Address
+	Weight  int64
+}
+
+// splitPayouts divides total between the payouts in proportion to their
+// weights. Rounding dust goes to the first payout, and payouts that round to
+// nothing are dropped, so the outputs always add up to total.
+func splitPayouts(total int64, payouts []Payout) ([]*wire.TxOut, error) {
+	if len(payouts) == 0 || len(payouts) > MaxPayouts {
+		return nil, fmt.Errorf("between 1 and %d payouts are required", MaxPayouts)
+	}
+	var sum int64
+	for _, p := range payouts {
+		if p.Weight <= 0 || p.Weight > 1_000_000_000 {
+			return nil, fmt.Errorf("payout weight %d is out of range", p.Weight)
+		}
+		sum += p.Weight
+	}
+	outs := make([]*wire.TxOut, 0, len(payouts))
+	var paid int64
+	for _, p := range payouts {
+		script, err := txscript.PayToAddrScript(p.Address)
+		if err != nil {
+			return nil, err
+		}
+		value := total * p.Weight / sum
+		outs = append(outs, &wire.TxOut{Value: value, PkScript: script})
+		paid += value
+	}
+	outs[0].Value += total - paid
+	kept := outs[:1]
+	for _, o := range outs[1:] {
+		if o.Value > 0 {
+			kept = append(kept, o)
+		}
+	}
+	return kept, nil
+}
+
 // createCoinbaseTx returns a coinbase transaction paying an appropriate subsidy
 // based on the passed block height to the provided address.  When the address
 // is nil, the coinbase transaction will instead pay to an OP_RETURN output,
@@ -237,7 +282,7 @@ func standardCoinbaseScript(nextBlockHeight int32, extraNonce uint64) ([]byte, e
 //
 // See the comment for NewBlockTemplate for more information about why the nil
 // address handling is useful.
-func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockHeight int32, addr btcutil.Address) (*btcutil.Tx, error) {
+func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockHeight int32, addr btcutil.Address, payouts []Payout) (*btcutil.Tx, error) {
 	// Create the script to pay to the provided payment address if one was
 	// specified.  Otherwise, create a provably-unspendable OP_RETURN output
 	// as a placeholder. Only P2TR and NullData (OP_RETURN) scripts are valid
@@ -269,10 +314,18 @@ func createCoinbaseTx(params *chaincfg.Params, coinbaseScript []byte, nextBlockH
 	})
 	// The miner output stays first: transaction fees are added to it later.
 	devShare := blockchain.DevFundShare(nextBlockHeight, params)
-	tx.AddTxOut(&wire.TxOut{
-		Value:    blockchain.CalcBlockSubsidy(nextBlockHeight, params) - devShare,
-		PkScript: pkScript,
-	})
+	minerValue := blockchain.CalcBlockSubsidy(nextBlockHeight, params) - devShare
+	if len(payouts) > 0 {
+		outs, err := splitPayouts(minerValue, payouts)
+		if err != nil {
+			return nil, err
+		}
+		for _, out := range outs {
+			tx.AddTxOut(out)
+		}
+	} else {
+		tx.AddTxOut(&wire.TxOut{Value: minerValue, PkScript: pkScript})
+	}
 	if devShare > 0 {
 		tx.AddTxOut(&wire.TxOut{Value: devShare, PkScript: params.DevFundScript})
 	}
@@ -405,6 +458,13 @@ func NewBlkTmplGenerator(policy *Policy, params *chaincfg.Params,
 //	|                                   |   |
 //	 -----------------------------------  --
 func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress btcutil.Address) (*BlockTemplate, error) {
+	return g.NewBlockTemplatePayouts(payToAddress, nil)
+}
+
+// NewBlockTemplatePayouts is NewBlockTemplate with the miner part of the
+// coinbase split between several addresses (shared pool payouts). The first
+// payout also receives the transaction fees.
+func (g *BlkTmplGenerator) NewBlockTemplatePayouts(payToAddress btcutil.Address, payouts []Payout) (*BlockTemplate, error) {
 	// Extend the most recently known best block.
 	best := g.chain.BestSnapshot()
 	nextBlockHeight := best.Height + 1
@@ -423,7 +483,7 @@ func (g *BlkTmplGenerator) NewBlockTemplate(payToAddress btcutil.Address) (*Bloc
 		return nil, err
 	}
 	coinbaseTx, err := createCoinbaseTx(g.chainParams, coinbaseScript,
-		nextBlockHeight, payToAddress)
+		nextBlockHeight, payToAddress, payouts)
 	if err != nil {
 		return nil, err
 	}
@@ -737,7 +797,7 @@ mempoolLoop:
 		Block:             &msgBlock,
 		Fees:              txFees,
 		Height:            nextBlockHeight,
-		ValidPayAddress:   payToAddress != nil,
+		ValidPayAddress:   payToAddress != nil || len(payouts) > 0,
 		WitnessCommitment: witnessCommitment,
 	}, nil
 }
