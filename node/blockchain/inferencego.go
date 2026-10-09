@@ -48,7 +48,7 @@ var inferenceGoSigHashTag = []byte("MDL-INFERENCEGO-ISSUE")
 // MUST be set before this feature ships.
 // Declared as a var, not a const, purely so tests can exercise the gate without
 // mining 36k blocks. Treat it as a consensus constant.
-var inferenceGoForkHeight = int32(36438)
+var inferenceGoForkHeight = int32(0) // NACRE: issuance from nothing stays disabled
 
 // inferenceGoForkActive reports whether issuance is valid at the given height.
 func inferenceGoForkActive(height int32) bool {
