@@ -177,10 +177,10 @@ var testNetGenesisTx = wire.MsgTx{
 // testNetGenesisHash is the hash of the first block in the block chain for the
 // test network.
 var testNetGenesisHash = chainhash.Hash([chainhash.HashSize]byte{
-	0x43, 0xe6, 0x80, 0x04, 0x54, 0xbe, 0xa5, 0x71,
-	0x2b, 0xd7, 0xa3, 0x3f, 0xc1, 0x24, 0x94, 0x20,
-	0x5d, 0x25, 0x4a, 0x64, 0x3c, 0x09, 0x9a, 0xf0,
-	0x2c, 0xe6, 0x10, 0x9b, 0x91, 0x93, 0x36, 0xb3,
+	0x8e, 0x5e, 0x88, 0xdd, 0xbe, 0x7b, 0xd6, 0xe6,
+	0xba, 0x78, 0x9c, 0xe4, 0xc9, 0xa8, 0x6d, 0xb1,
+	0xd9, 0x2b, 0xdf, 0xe3, 0x83, 0x0e, 0x4d, 0xa0,
+	0xa9, 0x72, 0xdc, 0x93, 0x1f, 0xa1, 0x58, 0x4e,
 })
 
 // testNetGenesisMerkleRoot is the hash of the first transaction in the genesis
@@ -206,8 +206,8 @@ var testNetGenesisBlock = wire.MsgBlock{
 			Version:    1,
 			PrevBlock:  chainhash.Hash{},         // 0000000000000000000000000000000000000000000000000000000000000000
 			MerkleRoot: testNetGenesisMerkleRoot, // 3216f95b9fb797e4cdb3a7a356f8455490306a5f4b710a513884625bcd9884c1
-			Timestamp:  time.Unix(1791115200, 0), // 2026-10-04 12:00:00 +0000 UTC
-			Bits:       0x1d00ffff,               // [00000000ffff0000000000000000000000000000000000000000000000000000]
+			Timestamp:  time.Unix(1791734700, 0), // 2026-10-11 16:05:00 +0000 UTC
+			Bits:       0x1d005555,               // [0000000055550000000000000000000000000000000000000000000000000000]
 		},
 	},
 	Transactions: []*wire.MsgTx{&testNetGenesisTx},
