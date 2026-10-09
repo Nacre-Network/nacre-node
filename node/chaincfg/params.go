@@ -38,7 +38,7 @@ var (
 
 	// mainPowLimit is the highest proof of work value a block can
 	// have for the main network.  It is the value 2^208 - 1.
-	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 208), bigOne)
+	mainPowLimit = new(big.Int).Sub(new(big.Int).Lsh(bigOne, 224), bigOne)
 
 	// testPowLimit is the highest proof of work value a block can
 	// have for the test network.  It is the value 2^208 - 1.
@@ -309,7 +309,7 @@ var MainNetParams = Params{
 	GenesisBlock: &genesisBlock,
 	GenesisHash:  &genesisHash,
 	PowLimit:     mainPowLimit,
-	PowLimitBits: 0x1b00ffff,
+	PowLimitBits: 0x1d00ffff,
 	// Production value: a freshly mined coinbase is spendable only after 100 confirmations.
 	// This is a consensus rule: every node on the network MUST run this exact value or fork.
 	CoinbaseMaturity:     100,
@@ -319,7 +319,7 @@ var MainNetParams = Params{
 	MinDiffReductionTime: 0,
 	GenerateSupported:    false,
 	// inference_tx (v3) and inference_proof_tx (v4) are modelOS mainnet-only.
-	MaxSupportedTxVersion: 5, // inference_tx (3/4) + inferencego_tx (5)
+	MaxSupportedTxVersion: 2, // NACRE mainnet: no inference or issuance transactions
 	MaxTimeOffsetMinutes:  5,
 
 	// Checkpoints ordered from oldest to newest. Each hash was taken from the
@@ -330,14 +330,7 @@ var MainNetParams = Params{
 	// safely BELOW the live tip — a checkpoint above the tip makes isCurrent()
 	// return false (tip.height < checkpoint.Height) → the node stays in IBD and
 	// getblocktemplate is refused. (Tip was 18866 when these were added.)
-	Checkpoints: []Checkpoint{
-		{Height: 2000, Hash: newHashFromStr("db2442bfbcd5a9814135aed51cb9e6337d4880a12ab4230c94b1ce60475694bb")},
-		{Height: 5000, Hash: newHashFromStr("1e16f1bef355dae580546bdf37116be40683f050abf6f7552fd3ca5146467a26")},
-		{Height: 8000, Hash: newHashFromStr("76cb6d65a9ce5a787a8fa9a91efcf238e3fd4dc7c0ad2264f6a501bad95d8831")},
-		{Height: 11000, Hash: newHashFromStr("1a01af1039be3a2f71fa1e330f9be1eccf871180dd1a640a8025c6f92cbb886b")},
-		{Height: 14000, Hash: newHashFromStr("015eb33ed54a91525408e190ca058c2b47a4473eb660b9c5c198fa3052868fe4")},
-		{Height: 17000, Hash: newHashFromStr("d7fcd969038ff2842ede030be0df3def62861069ae15a30cca20c659ddc5747b")},
-	},
+	Checkpoints: nil,
 
 	// Consensus rule change deployments.
 	//
