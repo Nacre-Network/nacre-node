@@ -58,12 +58,12 @@ task build:blockchain   # bin/modelosd (the NACRE node), bin/prlctl, bin/oyster 
 
 The first build generates the ZK verifier cache, which takes about 20 seconds.
 
-## Running a testnet node
+## Running a node
 
 ```bash
-./bin/modelosd --testnet --txindex \
-  --addpeer=seed1.nacre.network:47210 \
-  --addpeer=seed2.nacre.network:47210
+./bin/modelosd --txindex \
+  --addpeer=seed1.nacre.network:47208 \
+  --addpeer=seed2.nacre.network:47208
 ```
 
 See `node/sample-modelos.conf` for all options.
