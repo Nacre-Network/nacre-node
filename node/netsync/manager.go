@@ -1456,7 +1456,7 @@ func (sm *SyncManager) handleInvMsg(imsg *invMsg) {
 
 		// Add the inventory to the cache of known inventory
 		// for the peer.
-		peer.AddKnownInventory(iv)
+		peer.AddKnownInventory(*iv)
 
 		// Ignore inventory when we're in headers-first mode.
 		if sm.headersFirstMode {

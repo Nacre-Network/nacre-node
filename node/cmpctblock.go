@@ -107,7 +107,7 @@ func (sp *serverPeer) OnGetBlockTxn(_ *peer.Peer, msg *wire.MsgGetBlockTxn) {
 // announcement/getdata still delivers the block (additive, never blocking).
 func (sp *serverPeer) OnCmpctBlock(_ *peer.Peer, msg *wire.MsgCmpctBlock) {
 	blockHash := msg.BlockHash()
-	sp.AddKnownInventory(wire.NewInvVect(wire.InvTypeBlock, &blockHash))
+	sp.AddKnownInventory(*wire.NewInvVect(wire.InvTypeBlock, &blockHash))
 
 	// A cmpctblock IS a block announcement, so it must feed the same per-peer
 	// bookkeeping an inv announcement does (see netsync handleInvMsg). Without

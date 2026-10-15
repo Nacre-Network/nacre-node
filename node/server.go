@@ -705,7 +705,7 @@ func (sp *serverPeer) OnTx(_ *peer.Peer, msg *wire.MsgTx) {
 	// methods and things such as hash caching.
 	tx := btcutil.NewTx(msg)
 	iv := wire.NewInvVect(wire.InvTypeTx, tx.Hash())
-	sp.AddKnownInventory(iv)
+	sp.AddKnownInventory(*iv)
 
 	// Queue the transaction up to be handled by the sync manager and
 	// intentionally block further receives until the transaction is fully
@@ -725,7 +725,7 @@ func (sp *serverPeer) OnBlock(_ *peer.Peer, msg *wire.MsgBlock, buf []byte) {
 
 	// Add the block to the known inventory for the peer.
 	iv := wire.NewInvVect(wire.InvTypeBlock, block.Hash())
-	sp.AddKnownInventory(iv)
+	sp.AddKnownInventory(*iv)
 
 	// Queue the block up to be handled by the block
 	// manager and intentionally block further receives
@@ -2110,7 +2110,7 @@ func (s *server) handleRelayInvMsg(state *peerState, msg relayMsg) {
 				// check. QueueMessage's default BaseEncoding would strip it → "coinbase has 0 items in its
 				// witness stack" on the peer → block rejected + peer disconnected → network-wide sync stall.
 				sp.QueueMessageWithEncoding(cb, nil, wire.WitnessEncoding)
-				sp.AddKnownInventory(msg.invVect)
+				sp.AddKnownInventory(*msg.invVect)
 				return
 			}
 			// else: fall through to inv/headers below.

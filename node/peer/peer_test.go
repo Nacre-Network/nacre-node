@@ -424,7 +424,7 @@ func TestOutboundPeer(t *testing.T) {
 		// Queue operations must not block or panic on a disconnected peer.
 		fakeInv := wire.NewInvVect(wire.InvTypeBlock, &chainhash.Hash{0x00, 0x01})
 		p.QueueInventory(fakeInv)
-		p.AddKnownInventory(fakeInv)
+		p.AddKnownInventory(*fakeInv)
 		p.QueueInventory(fakeInv)
 
 		done := make(chan struct{})

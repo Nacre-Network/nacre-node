@@ -2411,7 +2411,7 @@ func (b *blockManager) handleInvMsg(imsg *invMsg) {
 	// Add blocks to the cache of known inventory for the peer.
 	for _, iv := range invVects {
 		if iv.Type == wire.InvTypeBlock {
-			imsg.peer.AddKnownInventory(iv)
+			imsg.peer.AddKnownInventory(*iv)
 		}
 	}
 
