@@ -56,8 +56,8 @@ COPY --from=builder /app/bin/prlctl /usr/local/bin/prlctl
 
 VOLUME ["/root/.modelosd"]
 
-# 44208  Mainnet modelOS peer-to-peer port
-# 44107  Mainnet RPC port
-EXPOSE 44208 44107
+# 47208  NACRE mainnet peer-to-peer port
+# 47107  NACRE mainnet RPC port (publish it on the host loopback only)
+EXPOSE 47208 47107
 
 ENTRYPOINT ["modelosd"]
