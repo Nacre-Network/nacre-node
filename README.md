@@ -45,8 +45,8 @@ git diff 37c9b0e1..HEAD --stat
 | Simnet | 18555 | 18556 | `snacr` |
 | Regtest | 18444 | 18334 | `rnacr` |
 
-Mainnet is not launched. A public testnet runs, with seed nodes at `seed1.nacre.network` and
-`seed2.nacre.network` on port 47210.
+Mainnet has been live since 11 October 2026, 16:00 UTC. Seed nodes: `seed1.nacre.network` and
+`seed2.nacre.network`, port 47208.
 
 ## Building
 
@@ -70,9 +70,9 @@ See `node/sample-modelos.conf` for all options.
 
 ## Mining
 
-NACRE is mined on NVIDIA GPUs with the Pearl algorithm (pearlhash) through a pool. Pool software is not part of this
-repository. The public pool listens on `stratum+tcp://pool.nacre.network:3333`: set your own NACRE address as the
-wallet, and a block you find pays you directly. Live statistics are at <https://nacre.network/pool/>.
+NACRE is merge mined with Pearl: a Pearl share that meets the NACRE target is also a NACRE block, so no separate
+hardware or miner binary is needed. Pools add NACRE through the `createauxblock` and `submitauxblock` calls described
+above. This repository contains no pool software. Live network statistics are at <https://nacre.network/pool/>.
 
 ## Repository layout
 
